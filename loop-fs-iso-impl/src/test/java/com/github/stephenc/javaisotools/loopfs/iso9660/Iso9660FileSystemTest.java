@@ -54,7 +54,7 @@ public class Iso9660FileSystemTest {
         testProperties = new Properties();
         InputStream is = null;
         try {
-            is = Iso9660FileSystemTest.class.getResourceAsStream("/test.properties");
+            is = Iso9660FileSystemTest.class.getClassLoader().getResourceAsStream("test.properties");
             testProperties.load(is);
             filePath = testProperties.getProperty("source-image");
         } finally {

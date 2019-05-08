@@ -31,7 +31,7 @@ import com.github.stephenc.javaisotools.loopfs.api.FileEntry;
 public abstract class AbstractBlockFileSystem<T extends FileEntry> extends AbstractFileSystem<T> {
 
     private final int blockSize;
-    private final int reservedBlocks;
+    private int reservedBlocks;
     private VolumeDescriptorSet<T> volumeDescriptorSet;
 
     protected AbstractBlockFileSystem(final SeekableInput seekable, final boolean readOnly, final int blockSize,
@@ -48,6 +48,10 @@ public abstract class AbstractBlockFileSystem<T extends FileEntry> extends Abstr
 
         this.blockSize = blockSize;
         this.reservedBlocks = reservedBlocks;
+    }
+
+    public void setReservedBlocks(int reservedBlks) {
+        this.reservedBlocks = reservedBlks;
     }
 
     public final Iterator<T> iterator() {
@@ -86,7 +90,7 @@ public abstract class AbstractBlockFileSystem<T extends FileEntry> extends Abstr
      * @throws IOException if the number of bytes read into the buffer was less than the expected number (i.e. the block
      *                     size)
      */
-    protected final boolean readBlock(final long block, final byte[] buffer) throws IOException {
+    public final boolean readBlock(final long block, final byte[] buffer) throws IOException {
         final int bytesRead = readData(block * this.blockSize, buffer, 0, this.blockSize);
 
         if (bytesRead <= 0) {
