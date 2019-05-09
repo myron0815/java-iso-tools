@@ -102,6 +102,15 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 	}
 
 	public int readBytes(
+			long startPos,
+			byte[] buffer,
+			int offset,
+			int len
+	) throws IOException {
+		return readData(startPos, buffer, offset, len);
+	}
+
+	public int readFileContent(
 		UDFFileEntry entry,
 		long entryOffset,
 		byte[] buffer,

@@ -65,7 +65,7 @@ public class FileIdentifierDescriptor extends UDFDescriptor
 	public final int EP_LEN_IMPL_USE = BP_LEN_IMPL_USE + LEN_LEN_IMPL_USE;
 
 	// minimum length of a file identifier descriptor (field "Reserved" included)
-	public final int MINIMUM_LENGTH = 512;
+	public final int MINIMUM_LENGTH = 40;
 
 	public FileIdentifierDescriptor() {
 		super();
@@ -105,7 +105,7 @@ public class FileIdentifierDescriptor extends UDFDescriptor
 		this.fileId = new DString(fragment);
 
 		Integer bytesConsumed = bpFileIdentifier + this.fileIdLength;
-		
+
 		Integer divisor = Constants.FID_PADDING_DIVISOR;
 		Integer paddingLength = divisor - (bytesConsumed % divisor);
 		this.consumption = bytesConsumed + paddingLength;

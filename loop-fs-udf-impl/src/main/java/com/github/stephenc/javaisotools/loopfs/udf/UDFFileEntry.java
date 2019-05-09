@@ -144,8 +144,14 @@ public class UDFFileEntry implements FileEntry
 					"Invalid descriptor found at sector " + absSectorNum.toString()
 				);
 			}
+
+			String fileName = fid.fileId.toString();
+			if (fileName.equals("")){
+				continue;
+			}
+
 			UDFFileEntry file = new UDFFileEntry(
-				this.fs, fed, currentPath, fid.fileId.toString()
+				this.fs, fed, currentPath, fileName
 			);
 			files.add(file);
 		}

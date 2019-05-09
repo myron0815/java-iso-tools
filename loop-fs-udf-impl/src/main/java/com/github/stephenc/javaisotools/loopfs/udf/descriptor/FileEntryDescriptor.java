@@ -234,14 +234,29 @@ public class FileEntryDescriptor extends UDFDescriptor
 	 * @param fs the UDFFileSystem object to read
 	 */
 	public void loadChildren(UDFFileSystem fs) throws IOException {
-		byte[] buffer = new byte[Constants.DEFAULT_BLOCK_SIZE];
 		FileIdentifierDescriptor fid;
+		int bs = Constants.DEFAULT_BLOCK_SIZE;
 
 		for (ExtentAD ead : this.allocDescriptors) {
-			fs.readBlock(
-				fs.getPDStartPos() + ead.location,
-				buffer
+			// uint32 meets no long type support again ¯\_(ツ)_/¯
+			int bufferLength = ead.length.intValue();
+			byte[] buffer = new byte[bufferLength];
+
+			long absStartPos = fs.getPDStartPos() + ead.location;
+			int bytesRead = fs.readBytes(
+				absStartPos * bs,
+				buffer,
+				0,   // bufferOffset
+				bufferLength
 			);
+
+			if (bytesRead != ead.length) {
+				throw new IOException(
+					"Failed to read " + ead.length +
+					" bytes at the beginning of sector " + absStartPos +
+					". Actually read " + bytesRead + " bytes."
+				);
+			}
 
 			int offset = 0;
 			byte[] nextFragment = buffer;
@@ -251,6 +266,8 @@ public class FileEntryDescriptor extends UDFDescriptor
 			// (OSTA-UDF 2.3.4 NOTE-1)
 			boolean first = true;
 
+			boolean noMoreData = false;
+
 			while (true) {
 				try {
 					fid = new FileIdentifierDescriptor(nextFragment);
@@ -259,7 +276,14 @@ public class FileEntryDescriptor extends UDFDescriptor
 				}
 
 				offset += fid.getConsumption();
-				nextFragment = UDFUtil.getRemainingBytes(buffer, offset);
+
+				// Consumption of fid has included the padding, so it could
+				// exceed the bufferLength.
+				if (offset >= bufferLength) {
+					noMoreData = true;
+				} else {
+					nextFragment = UDFUtil.getRemainingBytes(buffer, offset);
+				}
 
 				if (first) {
 					first = false;
@@ -271,6 +295,7 @@ public class FileEntryDescriptor extends UDFDescriptor
 				// If nextFragment is another file identifier descriptor,
 				// then it must starts with 0x0101 and contains 40 bytes at least
 				if (
+					! noMoreData &&
 					nextFragment.length > 40 &&
 					UDFUtil.getUInt16(nextFragment, 0) == 0x0101
 				){

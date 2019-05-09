@@ -98,6 +98,15 @@ public class ICBTag
 
 		this.priorEntryNum = UDFUtil.getUInt32(bytes, BP_PRI_ENT_NUM);
 		this.strategyType = UDFUtil.getUInt16(bytes, BP_STG_TYPE);
+
+		// OSTA-UDF 2.3.5.1
+		// Strategy 4096 is not supported as well.
+		if (this.strategyType != 4) {
+			throw new InvalidICBTag(
+				"Unsupported ICB strategy: " + this.strategyType
+			);
+		}
+
 		this.strategyParam = UDFUtil.getBytes(bytes, BP_STG_PARAM, LEN_STG_PARAM);
 		this.maxEntries = UDFUtil.getUInt16(bytes, BP_MAX_ENTRIES);
 		this.fileType = UDFUtil.getUInt8(bytes, BP_FILE_TYPE);

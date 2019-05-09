@@ -80,7 +80,7 @@ class UDFEntryInputStream extends InputStream {
 				throw new IOException("ISO file closed.");
 			}
 
-			read = this.fs.readBytes(this.entry, this.pos, b, off, toRead);
+			read = this.fs.readFileContent(this.entry, this.pos, b, off, toRead);
 		}
 
 		if (read > 0) {
