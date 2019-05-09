@@ -89,6 +89,10 @@ public class UDFFileEntry implements FileEntry
 		return 0;
 	}
 
+	public boolean isLink() {
+		return this.icb.icbTag.fileType == Constants.FE_TYPE_LINK;
+	}
+
 	public boolean isDirectory() {
 		return this.icb.icbTag.fileType == Constants.FE_TYPE_DIRECTORY;
 	}
