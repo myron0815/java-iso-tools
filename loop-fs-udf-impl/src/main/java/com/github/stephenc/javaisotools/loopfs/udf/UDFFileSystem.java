@@ -212,6 +212,15 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 				read += ln;
 				bufferOffset += ln;
 			}
+
+			if (read == len) {
+				break;
+			} else if (read > len) {
+				// is this possible?
+				throw new IOException(
+					"byte array has been read is longer than expected"
+				);
+			}
 		}
 
 		return read;
