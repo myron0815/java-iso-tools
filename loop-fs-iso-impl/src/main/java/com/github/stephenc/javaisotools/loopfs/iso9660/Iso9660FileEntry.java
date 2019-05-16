@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
  *  
@@ -19,7 +20,32 @@
 
 package com.github.stephenc.javaisotools.loopfs.iso9660;
 
+import java.util.List;
+import java.util.ArrayList;
+
+import org.apache.commons.codec.binary.Hex;
+
 import com.github.stephenc.javaisotools.loopfs.api.FileEntry;
+import com.github.stephenc.javaisotools.loopfs.iso9660.susp.exceptions.SuspFieldEnds;
+import com.github.stephenc.javaisotools.loopfs.iso9660.susp.exceptions.InvalidSuspField;
+import com.github.stephenc.javaisotools.loopfs.iso9660.susp.exceptions.UnknownSuspFieldId;
+import com.github.stephenc.javaisotools.loopfs.iso9660.susp.SuspField;
+import com.github.stephenc.javaisotools.loopfs.iso9660.susp.SuspFieldCE;
+import com.github.stephenc.javaisotools.loopfs.iso9660.susp.SuspFieldER;
+import com.github.stephenc.javaisotools.loopfs.iso9660.susp.SuspFieldPD;
+import com.github.stephenc.javaisotools.loopfs.iso9660.susp.SuspFieldSP;
+import com.github.stephenc.javaisotools.loopfs.iso9660.susp.SuspFieldST;
+import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldCL;
+import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldNM;
+import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldPL;
+import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldPN;
+import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldPX;
+import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldRE;
+import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldRR;
+import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldSF;
+import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldSL;
+import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldTF;
+
 
 /**
  * Represents a file in an ISO9660 file system.
@@ -35,14 +61,31 @@ public final class Iso9660FileEntry implements FileEntry {
     private final int dataLength;
     private final long lastModifiedTime;
     private final int flags;
+    private final int fidLength;
     private final String identifier;
+
+    private final boolean suParsed;
+
+    // This list contains all fields in the system use block,
+    // including fields not implemented.
+    //
+    // Currently, this list will make some redundancy.
+    private final List<SuspField> suspFields = new ArrayList<SuspField>();
+
+    // This list contains all RRIP NM fields
+    private final List<RripFieldNM> rrnmFields = new ArrayList<RripFieldNM>();
 
     //private final int extAttributeLength;
     //private final int fileUnitSize;
     //private final int interleaveSize;
 
     public Iso9660FileEntry(final Iso9660FileSystem fileSystem, final byte[] block, final int pos) {
-        this(fileSystem, null, block, pos);
+        this(fileSystem, null, block, pos, true);
+    }
+
+    public Iso9660FileEntry(final Iso9660FileSystem fileSystem, final String parentPath,
+                            final byte[] block, final int startPos) {
+        this(fileSystem, parentPath, block, startPos, true);
     }
 
     /**
@@ -52,14 +95,16 @@ public final class Iso9660FileEntry implements FileEntry {
      * @param parentPath the path of the parent directory
      * @param block      the bytes of the sector containing this file entry
      * @param startPos   the starting position of this file entry
+     * @param parseSu    whether the System Use block needs to be parsed
      */
     public Iso9660FileEntry(final Iso9660FileSystem fileSystem, final String parentPath,
-                            final byte[] block, final int startPos) {
+                            final byte[] block, final int startPos,
+                            final boolean parseSu) {
+
         this.fileSystem = fileSystem;
         this.parentPath = parentPath;
 
         final int offset = startPos - 1;
-
         this.entryLength = Util.getUInt8(block, offset + 1);
         //this.extAttributeLength = Util.getUInt8(block, offset+2);
         this.startSector = Util.getUInt32LE(block, offset + 3);
@@ -68,24 +113,126 @@ public final class Iso9660FileEntry implements FileEntry {
         this.flags = Util.getUInt8(block, offset + 26);
         //this.fileUnitSize = Util.getUInt8(block, offset+27);
         //this.interleaveSize = Util.getUInt8(block, offset+28);
+        this.fidLength = Util.getUInt8(block, offset + 33);
         this.identifier = getFileIdentifier(block, offset, isDirectory());
+
+        this.suParsed = parseSu;
+
+        if (this.suParsed) {
+            // Util.getBytes will not minus startPos by 1.
+            int suStartPos = offset + 33 + this.fidLength;
+
+            // ECMA-119 9.1.12
+            if (this.fidLength % 2 == 0) {
+                suStartPos += 1;
+            }
+
+            byte[] suBlock = Util.getBytes(
+                    block,
+                    suStartPos,
+                    this.entryLength - (33 + this.fidLength)
+            );
+
+            try {
+                this.deserializeSuBlock(suBlock);
+            } catch (InvalidSuspField ex) {
+                throw new RuntimeException(ex);
+            } catch (SuspFieldEnds ex) {
+                // Nothing to do.
+            }
+        }
+    }
+
+    private void deserializeSuBlock(byte[] suBlock)
+            throws InvalidSuspField, SuspFieldEnds {
+
+        SuspField field;
+        int suBp = 1;
+
+        while (suBp < suBlock.length) {
+            int nextId = SuspField.extractFieldId(suBlock, suBp);
+
+            switch (nextId) {
+                case Constants.SU_FIELD_ID_CE:
+                    field = new SuspFieldCE(suBlock, suBp);
+                    break;
+                case Constants.SU_FIELD_ID_PD:
+                    field = new SuspFieldPD(suBlock, suBp);
+                    break;
+                case Constants.SU_FIELD_ID_SP:
+                    field = new SuspFieldSP(suBlock, suBp);
+                    break;
+                case Constants.SU_FIELD_ID_ST:
+                    field = new SuspFieldST(suBlock, suBp);
+                    this.suspFields.add(field);
+                    throw new SuspFieldEnds(
+                        "SU field sequence ends with the ST field"
+                    );
+                case Constants.SU_FIELD_ID_ER:
+                    field = new SuspFieldER(suBlock, suBp);
+                    break;
+                case Constants.RR_FIELD_ID_PX:
+                    field = new RripFieldPX(suBlock, suBp);
+                    break;
+                case Constants.RR_FIELD_ID_PN:
+                    field = new RripFieldPN(suBlock, suBp);
+                    break;
+                case Constants.RR_FIELD_ID_SL:
+                    field = new RripFieldSL(suBlock, suBp);
+                    break;
+                case Constants.RR_FIELD_ID_NM:
+                    field = new RripFieldNM(suBlock, suBp);
+                    this.rrnmFields.add( (RripFieldNM) field );
+                    break;
+                case Constants.RR_FIELD_ID_CL:
+                    field = new RripFieldCL(suBlock, suBp);
+                    break;
+                case Constants.RR_FIELD_ID_PL:
+                    field = new RripFieldPL(suBlock, suBp);
+                    break;
+                case Constants.RR_FIELD_ID_RE:
+                    field = new RripFieldRE(suBlock, suBp);
+                    break;
+                case Constants.RR_FIELD_ID_TF:
+                    field = new RripFieldTF(suBlock, suBp);
+                    break;
+                case Constants.RR_FIELD_ID_SF:
+                    field = new RripFieldSF(suBlock, suBp);
+                    break;
+                case Constants.RR_FIELD_ID_RR:
+                    field = new RripFieldRR(suBlock, suBp);
+                    break;
+                default:
+                    String hexId = Integer.toHexString(nextId).toUpperCase();
+                    throw new SuspFieldEnds(
+                        "SU field sequence ends with unknown field id: 0x" + hexId
+                    );
+            }
+
+            this.suspFields.add(field);
+            int length = field.getLength();
+            suBp += length;
+        }
     }
 
     private String getFileIdentifier(final byte[] block, final int offset, final boolean isDir) {
-        final int fidLength = Util.getUInt8(block, offset + 33);
-
         if (isDir) {
             final int buff34 = Util.getUInt8(block, offset + 34);
 
-            if ((fidLength == 1) && (buff34 == 0x00)) {
+            if ((this.fidLength == 1) && (buff34 == 0x00)) {
                 return ".";
-            } else if ((fidLength == 1) && (buff34 == 0x01)) {
+            } else if ((this.fidLength == 1) && (buff34 == 0x01)) {
                 return "..";
             }
         }
 
-        final String id = Util.getDChars(
-                block, offset + 34, fidLength, this.fileSystem.getEncoding());
+        final String id;
+        if (this.suParsed){
+            id = Util.getString(block, offset + 34, this.fidLength);
+        } else {
+            id = Util.getDChars(
+                    block, offset + 34, this.fidLength, this.fileSystem.getEncoding());
+        }
 
         final int sepIdx = id.indexOf(ID_SEPARATOR);
 
@@ -97,7 +244,22 @@ public final class Iso9660FileEntry implements FileEntry {
     }
 
     public String getName() {
-        return this.identifier;
+        if (this.fileSystem.suspUsed()) {
+            if (this.rrnmFields.toArray().length == 0) {
+                return this.identifier;
+            }
+
+            String name = "";
+            for (RripFieldNM field : this.rrnmFields) {
+                name += field.getNameContent();
+                if (! field.getFlagContinue()){
+                    break;
+                }
+            }
+            return name;
+        } else {
+            return this.identifier;
+        }
     }
 
     public String getPath() {
@@ -151,5 +313,23 @@ public final class Iso9660FileEntry implements FileEntry {
      */
     public final boolean isLastEntry() {
         return (this.flags & 0x40) == 0;
+    }
+
+    /**
+     * Returns SUSP fields contained in this directory record (or entry)
+     */
+    public List<SuspField> getSuspFields() {
+        return this.suspFields;
+    }
+
+    /**
+     * Returns a list of NM fields
+     */
+    public List<RripFieldNM> getRRNMFields() {
+        return this.rrnmFields;
+    }
+
+    public boolean hasNMFields() {
+        return this.rrnmFields.toArray().length > 0;
     }
 }

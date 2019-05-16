@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
  *  
@@ -22,6 +23,7 @@ package com.github.stephenc.javaisotools.loopfs.iso9660;
 import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.util.Arrays;
 
 import com.github.stephenc.javaisotools.loopfs.util.BigEndian;
 import com.github.stephenc.javaisotools.loopfs.util.LittleEndian;
@@ -118,6 +120,29 @@ public final class Util {
             return new String(block, pos - 1, length, encoding).trim();
         }
         catch (UnsupportedEncodingException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * Gets a fragment from a byte array
+     */
+    public static byte[] getBytes(byte[] bytes, int pos, int length) {
+        return Arrays.copyOfRange(bytes, pos, pos + length);
+    }
+
+    public static String getString(byte[] bytes, int pos, int length) {
+        return getString(bytes, pos, length, "ASCII");
+    }
+
+    /**
+     * Gets a fragment of string from a byte array
+     */
+    public static String getString(byte[] bytes, int pos, int length, String encoding) {
+        byte[] subArray = getBytes(bytes, pos - 1, length);
+        try{
+            return new String(subArray, encoding).trim();
+        } catch (UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
     }

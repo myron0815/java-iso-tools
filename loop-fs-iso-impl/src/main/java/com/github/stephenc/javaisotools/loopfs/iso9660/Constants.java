@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
  *  
@@ -41,4 +42,37 @@ public interface Constants {
      * Default character encoding.
      */
     String DEFAULT_ENCODING = "US-ASCII";
+
+    /**
+     * Signature Words of System Use fields. (SUSP specification section 5)
+     */
+    int SU_FIELD_ID_CE = 0x4345;
+    int SU_FIELD_ID_PD = 0x5044;
+    int SU_FIELD_ID_SP = 0x5350;
+    int SU_FIELD_ID_ST = 0x5354;
+    int SU_FIELD_ID_ER = 0x4552;
+
+    /**
+     * Signature Words of RRIP fields. (RRIP specification section 4.1)
+     */
+    int RR_FIELD_ID_PX = 0x5058;
+    int RR_FIELD_ID_PN = 0x504E;
+    int RR_FIELD_ID_SL = 0x534C;
+    int RR_FIELD_ID_NM = 0x4E4D;
+    int RR_FIELD_ID_CL = 0x434C;
+    int RR_FIELD_ID_PL = 0x504C;
+    int RR_FIELD_ID_RE = 0x5245;
+    int RR_FIELD_ID_TF = 0x5446;
+    int RR_FIELD_ID_SF = 0x5346;
+
+    /**
+     * The RR field in RRIP which has been dropped after RRIP 1.09.
+     */
+    int RR_FIELD_ID_RR = 0x5252;
+
+    /**
+     * Expected value of the check_bytes field in SP fields.
+     * (SUSP specification section 5.3 [4])
+     */
+    int SUSP_CHECK_BYTES = 0xBEEF;
 }

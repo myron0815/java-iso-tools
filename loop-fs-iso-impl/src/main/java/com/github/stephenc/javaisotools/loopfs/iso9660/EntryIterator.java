@@ -38,8 +38,9 @@ class EntryIterator implements Iterator<Iso9660FileEntry> {
     public EntryIterator(final Iso9660FileSystem fileSystem, final Iso9660FileEntry rootEntry) {
         this.fileSystem = fileSystem;
         this.queue = new LinkedList<Iso9660FileEntry>();
-        if (rootEntry != null)
-        	this.queue.add(rootEntry);
+        if (rootEntry != null){
+            this.queue.add(rootEntry);
+        }
     }
 
     public boolean hasNext() {
@@ -75,8 +76,11 @@ class EntryIterator implements Iterator<Iso9660FileEntry> {
                     continue;
                 }
 
+                Boolean suspUsed = this.fileSystem.suspUsed();
                 Iso9660FileEntry child = new Iso9660FileEntry(
-                        this.fileSystem, entry.getPath(), content, offset + 1);
+                        this.fileSystem, entry.getPath(), content,
+                        offset + 1, suspUsed
+                );
 
                 if (paddingMode && child.getSize() < 0) {
                     continue;

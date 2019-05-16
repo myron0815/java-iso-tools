@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
  *  
@@ -46,7 +47,11 @@ public class Iso9660VolumeDescriptorSet implements VolumeDescriptorSet<Iso9660Fi
     private String publisher;
     private String preparer;
     private String application;
+
+    // The true root entry from primary volume descriptor
     private Iso9660FileEntry rootDirectoryEntry;
+    // The root entry from supplementary volume descriptor
+    private Iso9660FileEntry supRootDirectoryEntry;
 
     // primary
     private String standardIdentifier;
@@ -195,7 +200,23 @@ public class Iso9660VolumeDescriptorSet implements VolumeDescriptorSet<Iso9660Fi
         this.systemIdentifier = Util.getAChars(descriptor, 9, 32, this.encoding);
         this.volumeIdentifier = Util.getDChars(descriptor, 41, 32, this.encoding);
         this.volumeSetIdentifier = Util.getDChars(descriptor, 191, 128, this.encoding);
-        this.rootDirectoryEntry = new Iso9660FileEntry(this.isoFile, descriptor, 157);
+
+        if (this.rootDirectoryEntry == null){
+            Iso9660FileEntry rootPointer = new Iso9660FileEntry(
+                    this.isoFile, null, descriptor, 157, false
+            );
+
+            long rootDEPos = rootPointer.getStartBlock();
+            byte[] buffer = new byte[Constants.DEFAULT_BLOCK_SIZE];
+            this.isoFile.readBlock(rootDEPos, buffer);
+            this.rootDirectoryEntry = new Iso9660FileEntry(
+                    this.isoFile, null, buffer, 1
+            );
+        } else {
+            this.supRootDirectoryEntry = new Iso9660FileEntry(
+                    this.isoFile, null, descriptor, 157, true
+            );
+        }
     }
 
     /**
@@ -267,8 +288,32 @@ public class Iso9660VolumeDescriptorSet implements VolumeDescriptorSet<Iso9660Fi
         return this.application;
     }
 
+    /**
+     * The original getRootEntry method.
+     *
+     * Returns the supRootDirectoryEntry if has supplementary volume descriptor,
+     * otherwise, returns the root entry from the primary volume descriptor.
+     */
     public Iso9660FileEntry getRootEntry() {
+        if (this.hasSupplementary()) {
+            return this.supRootDirectoryEntry;
+        } else {
+            return this.rootDirectoryEntry;
+        }
+    }
+
+    /**
+     * Returns the root entry from the primary volume descriptor
+     */
+    public Iso9660FileEntry getPrimaryRootEntry() {
         return this.rootDirectoryEntry;
+    }
+
+    /**
+     * Returns the root entry from the supplementary volume descriptor
+     */
+    public Iso9660FileEntry getSupRootEntry() {
+        return this.supRootDirectoryEntry;
     }
 
     public String getStandardIdentifier() {
