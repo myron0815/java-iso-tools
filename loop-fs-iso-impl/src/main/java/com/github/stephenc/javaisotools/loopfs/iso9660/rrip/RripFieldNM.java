@@ -20,8 +20,6 @@
 
 package com.github.stephenc.javaisotools.loopfs.iso9660.rrip;
 
-import org.apache.commons.codec.binary.Hex;
-
 import com.github.stephenc.javaisotools.loopfs.iso9660.Util;
 import com.github.stephenc.javaisotools.loopfs.iso9660.Constants;
 import com.github.stephenc.javaisotools.loopfs.iso9660.susp.SuspField;

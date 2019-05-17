@@ -23,8 +23,6 @@ package com.github.stephenc.javaisotools.loopfs.iso9660;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.apache.commons.codec.binary.Hex;
-
 import com.github.stephenc.javaisotools.loopfs.api.FileEntry;
 import com.github.stephenc.javaisotools.loopfs.iso9660.susp.exceptions.SuspFieldEnds;
 import com.github.stephenc.javaisotools.loopfs.iso9660.susp.exceptions.InvalidSuspField;
