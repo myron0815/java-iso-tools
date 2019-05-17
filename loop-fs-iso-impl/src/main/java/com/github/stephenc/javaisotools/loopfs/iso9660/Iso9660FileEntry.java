@@ -50,7 +50,8 @@ import com.github.stephenc.javaisotools.loopfs.iso9660.rrip.RripFieldTF;
  */
 public final class Iso9660FileEntry implements FileEntry {
 
-    public static final char ID_SEPARATOR = ';';
+    public static final String ID_SEPARATOR1 = ".;1";
+    public static final String ID_SEPARATOR2 = ";1";
 
     private Iso9660FileSystem fileSystem;
     private String parentPath;
@@ -232,10 +233,14 @@ public final class Iso9660FileEntry implements FileEntry {
                     block, offset + 34, this.fidLength, this.fileSystem.getEncoding());
         }
 
-        final int sepIdx = id.indexOf(ID_SEPARATOR);
+        // We should handle both of these separators here.
+        final int sep1Idx = id.indexOf(ID_SEPARATOR1);
+        final int sep2Idx = id.indexOf(ID_SEPARATOR2);
 
-        if (sepIdx >= 0) {
-            return id.substring(0, sepIdx);
+        if (sep1Idx >= 0) {
+            return id.substring(0, sep1Idx);
+        } else if (sep2Idx >= 0) {
+            return id.substring(0, sep2Idx);
         } else {
             return id;
         }
