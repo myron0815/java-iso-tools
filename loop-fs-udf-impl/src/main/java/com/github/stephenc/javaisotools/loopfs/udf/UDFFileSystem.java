@@ -265,7 +265,7 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 	}
 
 	/**
-	 * Verify the standard in volume structure descriptors.
+	 * Check if the standard in volume structure descriptors has been supported.
 	 *
 	 * TODO:
 	 *     Implement it.
