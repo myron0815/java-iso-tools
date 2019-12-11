@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.FileUtils;
@@ -84,7 +85,7 @@ public class UDFTest {
 				InputStream inStream = img.getInputStream(fe);
 				String content = IOUtils.toString(inStream, StandardCharsets.UTF_8.toString()); 
 
-				Assert.assertEquals(fe.getPath(), "/a.txt");
+				Assert.assertEquals(fe.getPath(), File.separator + "a.txt");
 				Assert.assertEquals(fe.getName(), "a.txt");
 				Assert.assertEquals(content.length(), 17733);
 			}

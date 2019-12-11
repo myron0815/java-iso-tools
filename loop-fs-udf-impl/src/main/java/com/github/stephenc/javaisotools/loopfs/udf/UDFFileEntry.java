@@ -81,7 +81,7 @@ public class UDFFileEntry implements FileEntry
 			return "/";
 		}
 
-		Path path = Paths.get(this.parentPath, this.entryName);
+		Path path = Paths.get(this.parentPath).resolve(this.entryName);
 		return path.toString();
 	}
 
