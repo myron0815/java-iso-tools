@@ -82,7 +82,7 @@ public class UDFTest {
 				Assert.assertEquals(fe.getPath(), "/");
 			} else {
 				InputStream inStream = img.getInputStream(fe);
-				String content = IOUtils.toString(inStream, StandardCharsets.UTF_8); 
+				String content = IOUtils.toString(inStream, StandardCharsets.UTF_8.toString()); 
 
 				Assert.assertEquals(fe.getPath(), "/a.txt");
 				Assert.assertEquals(fe.getName(), "a.txt");

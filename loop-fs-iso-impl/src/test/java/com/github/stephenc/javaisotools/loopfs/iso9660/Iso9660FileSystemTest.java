@@ -20,23 +20,18 @@ package com.github.stephenc.javaisotools.loopfs.iso9660;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
-
-import com.github.stephenc.javaisotools.loopfs.spi.SeekableInputFile;
-import com.github.stephenc.javaisotools.loopfs.spi.SeekableInputFileHadoop;
-import com.google.common.collect.Iterables;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.codehaus.plexus.util.IOUtil;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+
+import org.codehaus.plexus.util.IOUtil;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.github.stephenc.javaisotools.loopfs.spi.SeekableInputFile;
 
 /**
  * Tests the Iso9660 implementation.
@@ -66,33 +61,6 @@ public class Iso9660FileSystemTest {
     public void smokes() throws Exception {
         Iso9660FileSystem image = new Iso9660FileSystem(new File(filePath), true);
         this.runCheck(image);
-    }
-
-    @Test
-    public void shouldReadAllBytesWhenSeekableInputPartiallyReads() throws IOException {
-        // Create seekeable input which does not read up to specified length
-        SeekableInputFile input = new PartiallyReadSeekableInput();
-        Iso9660FileSystem fs = new Iso9660FileSystem(input, true);
-        Iso9660FileEntry entry = Iterables.getLast(fs);
-
-        byte[] bytes = fs.getBytes(entry);
-
-        assertThat("All bytes should have been read", new String(bytes), is("Goodbye"));
-    }
-
-    @Test
-    public void hdfsSmokes() throws Exception {
-        assumeTrue(isNotWindows());
-        //Creating a Mini DFS Cluster as the default File System does not return a Seekable Stream
-        MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(new Configuration());
-        MiniDFSCluster hdfsCluster = builder.build();
-        String hdfsTestFile = "hdfs://127.0.0.1:" + hdfsCluster.getNameNodePort() + "/test/" + filePath;
-        hdfsCluster.getFileSystem()
-                .copyFromLocalFile(new Path(filePath), new Path(hdfsTestFile));
-        InputStream is = hdfsCluster.getFileSystem().open(new Path(hdfsTestFile));
-        Iso9660FileSystem image = new Iso9660FileSystem(new SeekableInputFileHadoop(is), true);
-        this.runCheck(image);
-        hdfsCluster.shutdown();
     }
 
     private void runCheck(Iso9660FileSystem image) throws Exception {
