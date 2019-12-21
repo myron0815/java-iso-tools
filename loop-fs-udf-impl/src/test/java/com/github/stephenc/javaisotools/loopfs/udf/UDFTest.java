@@ -18,29 +18,15 @@
 
 package com.github.stephenc.javaisotools.loopfs.udf;
 
+import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Properties;
+
+import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Properties;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.FileUtils;
-
-import com.github.stephenc.javaisotools.loopfs.spi.VolumeDescriptorSet;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFFileEntry;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFFileSystem;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFVolumeDescriptorSet;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.AnchorDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileIdentifierDescriptor;
 
 
 /**
@@ -63,6 +49,23 @@ public class UDFTest {
 		discPath = testProperties.getProperty("source-image");
 		discFile = new File(discPath);
 	}
+
+  @Test
+  public void listFiles() throws Exception {
+    UDFFileSystem img = new UDFFileSystem(discFile, true);
+    for (UDFFileEntry fe : img) {
+      listFiles(fe);
+    }
+  }
+
+  private void listFiles(UDFFileEntry fe) throws Exception {
+    System.out.println(fe.getPath() + " " + fe.getName());
+    if (fe.isDirectory()) {
+      for (UDFFileEntry child : fe.getFiles()) {
+        listFiles(child);
+      }
+    }
+  }
 
 	@Test
 	public void smokes() throws Exception {

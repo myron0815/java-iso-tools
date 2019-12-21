@@ -27,100 +27,116 @@ import org.apache.commons.logging.LogFactory;
 
 import com.github.stephenc.javaisotools.loopfs.api.FileEntry;
 import com.github.stephenc.javaisotools.loopfs.spi.VolumeDescriptorSet;
-
-import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.Constants;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFFileEntry;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.PrimaryVolumeDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.PartitionDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileSetDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileIdentifierDescriptor;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.ExtendedFileEntryDescriptor;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileEntryDescriptor;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileSetDescriptor;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.PartitionDescriptor;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.PrimaryVolumeDescriptor;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.DescriptorTag;
+import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
+public class UDFVolumeDescriptorSet implements VolumeDescriptorSet {
+  private static final Log       log = LogFactory.getLog(UDFVolumeDescriptorSet.class);
 
-public class UDFVolumeDescriptorSet implements VolumeDescriptorSet
-{
-	private static final Log log = LogFactory.getLog(UDFVolumeDescriptorSet.class);
+  private UDFFileSystem          fs;
 
-	private UDFFileSystem fs;
+  public PrimaryVolumeDescriptor pvd;
+  public PartitionDescriptor     pd;
+  public FileSetDescriptor       rootFSD;
+  public FileEntryDescriptor     rootEntry;
 
-	public PrimaryVolumeDescriptor pvd;
-	public PartitionDescriptor pd;
-	public FileSetDescriptor rootFSD;
-	public FileEntryDescriptor rootEntry;
+  public UDFVolumeDescriptorSet(UDFFileSystem fs) {
+    this.fs = fs;
+  }
 
-	public UDFVolumeDescriptorSet(UDFFileSystem fs) {
-		this.fs = fs;
-	}
+  public boolean deserialize(byte[] bytes) throws IOException {
+    Integer type = UDFUtil.getUInt16(bytes, 0);
+    boolean terminated = false;
 
-	public boolean deserialize(byte[] bytes) throws IOException {
-		Integer type = UDFUtil.getUInt16(bytes, 0);
-		boolean terminated = false;
+    try {
+      switch (type) {
+        case Constants.D_TYPE_PRIMARY_VOLUME:
+          this.pvd = new PrimaryVolumeDescriptor(bytes);
+          log.debug("Found primary volume descriptor.");
+          break;
+        case Constants.D_TYPE_IMPL_USE:
+          log.debug("Found implementation use descriptor.");
+          break;
+        case Constants.D_TYPE_PARTITION:
+          this.pd = new PartitionDescriptor(bytes);
+          log.debug("Found partition descriptor.");
 
-		try {
-			switch (type) {
-				case Constants.D_TYPE_PRIMARY_VOLUME:
-					this.pvd = new PrimaryVolumeDescriptor(bytes);
-					log.debug("Found primary volume descriptor.");
-					break;
-				case Constants.D_TYPE_IMPL_USE:
-					log.debug("Found implementation use descriptor.");
-					break;
-				case Constants.D_TYPE_PARTITION:
-					this.pd = new PartitionDescriptor(bytes);
-					log.debug("Found partition descriptor.");
+          this.tracePartition();
+          break;
+        case Constants.D_TYPE_LOGICAL_VOLUME:
+          log.debug("Found logical volume descriptor.");
+          break;
+        case Constants.D_TYPE_UNALLOCATED_SPACE:
+          log.debug("Found unallocated space descriptor.");
+          break;
+        case Constants.D_TYPE_TERMINATING:
+          terminated = true;
+          log.debug("Found terminating descriptor.");
+          break;
+        default:
+          log.debug("Found unknown volume descriptor with type: " + type);
+      }
+    }
+    catch (InvalidDescriptor ex) {
+      throw new IOException(ex.getMessage());
+    }
 
-					this.tracePartition();
-					break;
-				case Constants.D_TYPE_LOGICAL_VOLUME:
-					log.debug("Found logical volume descriptor.");
-					break;
-				case Constants.D_TYPE_UNALLOCATED_SPACE:
-					log.debug("Found unallocated space descriptor.");
-					break;
-				case Constants.D_TYPE_TERMINATING:
-					terminated = true;
-					log.debug("Found terminating descriptor.");
-					break;
-				default:
-					log.debug(
-						"Found unknown volume descriptor with type: " + type
-					);
-			}
-		} catch (InvalidDescriptor ex) {
-			throw new IOException(ex.getMessage());
-		}
+    return terminated;
+  }
 
-		return terminated;
-	}
+  /**
+   * Read file set descriptors at the beginning of a partition.
+   *
+   * Currently, this method reads the first file set descriptor only.
+   */
+  private void tracePartition() throws IOException, InvalidDescriptor {
+    byte[] buffer = new byte[Constants.DEFAULT_BLOCK_SIZE];
+    DescriptorTag tag;
 
-	/**
-	 * Read file set descriptors at the beginning of a partition.
-	 *
-	 * Currently, this method reads the first file set descriptor only.
-	 */
-	private void tracePartition() throws IOException, InvalidDescriptor {
-		byte[] buffer = new byte[Constants.DEFAULT_BLOCK_SIZE];
+    // seek the first fsd
+    int pos = 0;
+    while (this.fs.readBlock(this.pd.startingLocation + pos, buffer)) {
+      try {
+        tag = new DescriptorTag(buffer);
+        if (tag.identifier == Constants.D_TYPE_FILE_SET) {
+          System.out.println("found at " + pos);
+          break;
+        }
+      }
+      catch (Exception e) {
+      }
+      pos++;
+    }
+    this.rootFSD = new FileSetDescriptor(buffer);
 
-		this.fs.readBlock(this.pd.startingLocation.longValue(), buffer);
-		this.rootFSD = new FileSetDescriptor(buffer);
+    // adopt partition start pos
+    this.pd.startingLocation += pos;
 
-		this.fs.readBlock(
-			this.getPDStartPos() + this.rootFSD.rootICB.location.blockNumber,
-			buffer
-		);
-		this.rootEntry = new FileEntryDescriptor(buffer);
-	}
+    // find the first file entry
+    this.fs.readBlock(this.getPDStartPos() + this.rootFSD.rootICB.location.blockNumber, buffer);
 
-	public FileEntry getRootEntry() {
-		return new UDFFileEntry(this.fs, this.rootEntry, null, null, true);
-	}
+    tag = new DescriptorTag(buffer);
+    if (tag.identifier == Constants.D_TYPE_FILE_ENTRY) {
+      this.rootEntry = new FileEntryDescriptor(buffer);
+    }
+    else if (tag.identifier == Constants.D_TYPE_EXTENDED_FILE_ENTRY) {
+      this.rootEntry = new ExtendedFileEntryDescriptor(buffer);
+    }
+  }
 
-	/**
-	 * Gets the starting location of the partition
-	 */
-	public long getPDStartPos() {
-		return this.pd.startingLocation;
-	}
+  public FileEntry getRootEntry() {
+    return new UDFFileEntry(this.fs, this.rootEntry, null, null, true);
+  }
+
+  /**
+   * Gets the starting location of the partition
+   */
+  public long getPDStartPos() {
+    return this.pd.startingLocation;
+  }
 }

@@ -20,142 +20,131 @@
 
 package com.github.stephenc.javaisotools.loopfs.udf;
 
-import java.util.List;
-import java.util.ArrayList;
-
 import java.io.IOException;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.github.stephenc.javaisotools.loopfs.api.FileEntry;
-import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.Constants;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFFileSystem;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.ExtendedFileEntryDescriptor;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileEntryDescriptor;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileIdentifierDescriptor;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.DescriptorTag;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.ExtentAD;
+import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
+public class UDFFileEntry implements FileEntry {
+  private UDFFileSystem       fs;
+  private FileEntryDescriptor icb;
+  private String              parentPath;
+  private String              entryName;
+  private Boolean             isRoot;
 
-public class UDFFileEntry implements FileEntry
-{
-	private UDFFileSystem fs;
-	private FileEntryDescriptor icb;
-	private String parentPath;
-	private String entryName;
-	private Boolean isRoot;
+  public UDFFileEntry(UDFFileSystem fs, FileEntryDescriptor icb, String parentPath, String entryName) {
+    this(fs, icb, parentPath, entryName, false);
+  }
 
-	public UDFFileEntry (
-		UDFFileSystem fs,
-		FileEntryDescriptor icb,
-		String parentPath,
-		String entryName
-	) {
-		this(fs, icb, parentPath, entryName, false);
-	}
+  public UDFFileEntry(UDFFileSystem fs, FileEntryDescriptor icb, String parentPath, String entryName, Boolean isRoot) {
+    this.fs = fs;
+    this.parentPath = parentPath;
+    this.icb = icb;
+    this.entryName = entryName;
+    this.isRoot = isRoot;
+  }
 
-	public UDFFileEntry(
-		UDFFileSystem fs,
-		FileEntryDescriptor icb,
-		String parentPath,
-		String entryName,
-		Boolean isRoot
-	) {
-		this.fs = fs;
-		this.parentPath = parentPath;
-		this.icb = icb;
-		this.entryName = entryName;
-		this.isRoot = isRoot;
-	}
+  public String getName() {
+    if (this.isRoot) {
+      return "/";
+    }
+    else {
+      return this.entryName;
+    }
+  }
 
-	public String getName() {
-		if (this.isRoot) {
-			return "/";
-		} else {
-			return this.entryName;
-		}
-	}
+  public String getPath() {
+    if (this.isRoot) {
+      return "/";
+    }
 
-	public String getPath() {
-		if (this.isRoot) {
-			return "/";
-		}
+    Path path = Paths.get(this.parentPath).resolve(this.entryName);
+    return path.toString();
+  }
 
-		Path path = Paths.get(this.parentPath).resolve(this.entryName);
-		return path.toString();
-	}
+  public long getLastModifiedTime() {
+    return 0;
+  }
 
-	public long getLastModifiedTime() {
-		return 0;
-	}
+  public boolean isLink() {
+    return this.icb.icbTag.fileType == Constants.FE_TYPE_LINK;
+  }
 
-	public boolean isLink() {
-		return this.icb.icbTag.fileType == Constants.FE_TYPE_LINK;
-	}
+  public boolean isDirectory() {
+    return this.icb.icbTag.fileType == Constants.FE_TYPE_DIRECTORY;
+  }
 
-	public boolean isDirectory() {
-		return this.icb.icbTag.fileType == Constants.FE_TYPE_DIRECTORY;
-	}
+  public long getSize() {
+    // If only we have BEEEEEP unsigned types in Java.
+    return this.icb.infoLength.longValue();
+  }
 
-	public long getSize() {
-		// If only we have BEEEEEP unsigned types in Java.
-		return this.icb.infoLength.longValue();
-	}
+  /**
+   * get Allocation Descriptors
+   */
+  public List<ExtentAD> getADs() {
+    return this.icb.allocDescriptors;
+  }
 
-	/**
-	 * get Allocation Descriptors
-	 */
-	public List<ExtentAD> getADs() {
-		return this.icb.allocDescriptors;
-	}
+  /**
+   * Load files in the entry of a directory
+   */
+  public void loadFiles() throws IOException {
+    if (this.isDirectory()) {
+      this.icb.loadChildren(this.fs);
+    }
+  }
 
-	/**
-	 * Load files in the entry of a directory
-	 */
-	public void loadFiles() throws IOException {
-		if ( this.isDirectory() ){
-			this.icb.loadChildren(this.fs);
-		}
-	}
+  /**
+   * Get files in the entry of a directory
+   */
+  public List<UDFFileEntry> getFiles() throws IOException {
+    if (!this.isDirectory()) {
+      return new ArrayList<UDFFileEntry>();
+    }
 
-	/**
-	 * Get files in the entry of a directory
-	 */
-	public List<UDFFileEntry> getFiles() throws IOException {
-		if ( !this.isDirectory() ){
-			return new ArrayList<UDFFileEntry>();
-		}
+    String currentPath = this.getPath();
+    List<UDFFileEntry> files = new ArrayList<UDFFileEntry>();
 
-		String currentPath = this.getPath();
-		List<UDFFileEntry> files = new ArrayList<UDFFileEntry>();
+    for (FileIdentifierDescriptor fid : this.icb.fids) {
+      Long relativeSectorNum = fid.icb.location.blockNumber;
+      Long absSectorNum = relativeSectorNum + this.fs.getPDStartPos();
 
-		for (FileIdentifierDescriptor fid : this.icb.fids){
-			Long relativeSectorNum = fid.icb.location.blockNumber;
-			Long absSectorNum = relativeSectorNum + this.fs.getPDStartPos();
+      byte[] buffer = new byte[Constants.DEFAULT_BLOCK_SIZE];
+      this.fs.readBlock(absSectorNum, buffer);
 
-			byte[] buffer = new byte[Constants.DEFAULT_BLOCK_SIZE];
-			this.fs.readBlock(absSectorNum, buffer);
+      FileEntryDescriptor fed;
+      try {
+        DescriptorTag tag = new DescriptorTag(buffer);
+        if (tag.identifier == Constants.D_TYPE_EXTENDED_FILE_ENTRY) {
+          fed = new ExtendedFileEntryDescriptor(buffer);
+        }
+        else {
+          fed = new FileEntryDescriptor(buffer);
+        }
+      }
+      catch (InvalidDescriptor ex) {
+        throw new IOException("Invalid descriptor found at sector " + absSectorNum.toString());
+      }
 
-			FileEntryDescriptor fed;
-			try {
-				fed = new FileEntryDescriptor(buffer);
-			} catch (InvalidDescriptor ex) {
-				throw new IOException(
-					"Invalid descriptor found at sector " + absSectorNum.toString()
-				);
-			}
+      String fileName = fid.fileId.toString();
+      if (fileName.equals("")) {
+        continue;
+      }
 
-			String fileName = fid.fileId.toString();
-			if (fileName.equals("")){
-				continue;
-			}
+      UDFFileEntry file = new UDFFileEntry(this.fs, fed, currentPath, fileName);
+      files.add(file);
+    }
 
-			UDFFileEntry file = new UDFFileEntry(
-				this.fs, fed, currentPath, fileName
-			);
-			files.add(file);
-		}
-
-		return files;
-	}
+    return files;
+  }
 }
