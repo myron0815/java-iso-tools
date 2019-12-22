@@ -104,7 +104,7 @@ public class UDFVolumeDescriptorSet implements VolumeDescriptorSet {
       try {
         tag = new DescriptorTag(buffer);
         if (tag.identifier == Constants.D_TYPE_FILE_SET) {
-          System.out.println("found at " + pos);
+          log.debug("found FSD at " + pos);
           break;
         }
       }
