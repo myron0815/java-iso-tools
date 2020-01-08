@@ -29,16 +29,10 @@ import com.github.stephenc.javaisotools.loopfs.spi.AbstractBlockFileSystem;
 import com.github.stephenc.javaisotools.loopfs.spi.SeekableInput;
 import com.github.stephenc.javaisotools.loopfs.spi.SeekableInputFile;
 import com.github.stephenc.javaisotools.loopfs.spi.VolumeDescriptorSet;
-
-import com.github.stephenc.javaisotools.loopfs.udf.exceptions.UnsupportedStandard;
-import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.Constants;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFFileEntry;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFEntryIterator;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFEntryInputStream;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFVolumeDescriptorSet;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.AnchorDescriptor;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.ExtentAD;
+import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
+import com.github.stephenc.javaisotools.loopfs.udf.exceptions.UnsupportedStandard;
 
 
 public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
@@ -173,6 +167,9 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 		//        ln = len + entryOffset - (frag0.length + frag1.length)
 		//        result += read(of, ln)
 		for (ExtentAD ead : entry.getADs()) {
+      if (ead.length == 0) {
+        continue;
+      }
 			long fragLen = ead.length;
 			long fragPos = this.getPDStartPos() + ead.location;
 			offset += fragLen;
@@ -192,7 +189,7 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 			}
 
 			if (offset < endPosition) {
-				ln = fragLen;
+        ln = offset - entryOffset;
 			} else {
 				ln = endPosition - Math.max(processed, entryOffset);
 			}
@@ -273,6 +270,6 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 	 * @throws UnsupportedStandard
 	 */
 	private void verifyStandard() throws UnsupportedStandard {
-		
+
 	}
 }

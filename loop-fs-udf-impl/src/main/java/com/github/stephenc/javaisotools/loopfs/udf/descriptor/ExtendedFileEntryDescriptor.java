@@ -172,7 +172,7 @@ public class ExtendedFileEntryDescriptor extends FileEntryDescriptor {
     fragment = UDFUtil.getBytes(bytes, BP_IMPL_ID, LEN_IMPL_ID);
     this.implIdentifier = new RegId(fragment);
 
-    this.uniqueId = UDFUtil.getUInt64(bytes, BP_IMPL_ID);
+    this.uniqueId = UDFUtil.getUInt64(bytes, BP_UNIQUE_ID);
     this.extAttrLength = UDFUtil.getUInt32(bytes, BP_EXT_ATTR_LEN);
     this.allocDescriptorLength = UDFUtil.getUInt32(bytes, BP_ALLOC_DESC_LEN);
 

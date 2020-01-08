@@ -20,8 +20,8 @@
 
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor.element;
 
-import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidExtentAD;
 import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
+import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidExtentAD;
 
 
 /**
@@ -54,19 +54,27 @@ public class ExtentAD
 		this.deserialize(bytes);
 	}
 
-	/**
-	 * deserialize bytes of a raw extent allocation descriptor
-	 *
-	 * @param bytes byte array contains a raw extent
-	 *              allocation descriptor at the beginning
-	 * @throws InvalidExtentAD
-	 */
-	public void deserialize(byte[] bytes) throws InvalidExtentAD {
-		if (bytes.length < MINIMUM_LENGTH) {
-			throw new InvalidExtentAD("extent allocation descriptor too short");
-		}
+  /**
+   * deserialize bytes of a raw extent allocation descriptor
+   *
+   * @param bytes
+   *          byte array contains a raw extent allocation descriptor at the beginning
+   * @throws InvalidExtentAD
+   */
+  public void deserialize(byte[] bytes) throws InvalidExtentAD {
+    if (bytes.length < MINIMUM_LENGTH) {
+      throw new InvalidExtentAD("extent allocation descriptor too short");
+    }
+    // get the extent length without the most significant 2 bits (they are indicators) 2.3.10
+    this.length = calculateLength(bytes, BP_LENGTH);
+    this.location = UDFUtil.getUInt32(bytes, BP_LOCATION);
+  }
 
-		this.length = UDFUtil.getUInt32(bytes, BP_LENGTH);
-		this.location = UDFUtil.getUInt32(bytes, BP_LOCATION);
-	}
+  private static long calculateLength(byte[] src, int offset) {
+    long v0 = (long) (src[offset] & 255);
+    long v1 = (long) (src[offset + 1] & 255);
+    long v2 = (long) (src[offset + 2] & 255);
+    long v3 = (long) (src[offset + 3] & 63);
+    return v3 << 24 | v2 << 16 | v1 << 8 | v0;
+  }
 }
