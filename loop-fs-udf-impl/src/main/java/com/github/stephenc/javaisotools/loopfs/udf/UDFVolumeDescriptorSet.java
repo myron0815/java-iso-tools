@@ -98,27 +98,13 @@ public class UDFVolumeDescriptorSet implements VolumeDescriptorSet {
     byte[] buffer = new byte[Constants.DEFAULT_BLOCK_SIZE];
     DescriptorTag tag;
 
-    // seek the first fsd
-    int pos = 0;
-    while (this.fs.readBlock(this.pd.startingLocation + pos, buffer)) {
-      try {
-        tag = new DescriptorTag(buffer);
-        if (tag.identifier == Constants.D_TYPE_FILE_SET) {
-          log.debug("found FSD at " + pos);
-          break;
-        }
-      }
-      catch (Exception e) {
-      }
-      pos++;
-    }
+    // the first FSD is directly after the reserved blocks
+    long startingLocation = this.getPDStartPos() + this.fs.getAnchor().mainVolumeExtent.location;
+    this.fs.readBlock(startingLocation, buffer);
     this.rootFSD = new FileSetDescriptor(buffer);
 
-    // adopt partition start pos
-    this.pd.startingLocation += pos;
-
     // find the first file entry
-    this.fs.readBlock(this.getPDStartPos() + this.rootFSD.rootICB.location.blockNumber, buffer);
+    this.fs.readBlock(startingLocation + this.rootFSD.rootICB.location.blockNumber, buffer);
 
     tag = new DescriptorTag(buffer);
     if (tag.identifier == Constants.D_TYPE_FILE_ENTRY) {

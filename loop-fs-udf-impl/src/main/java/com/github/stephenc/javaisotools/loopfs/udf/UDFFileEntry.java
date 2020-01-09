@@ -117,7 +117,7 @@ public class UDFFileEntry implements FileEntry {
 
     for (FileIdentifierDescriptor fid : this.icb.fids) {
       Long relativeSectorNum = fid.icb.location.blockNumber;
-      Long absSectorNum = relativeSectorNum + this.fs.getPDStartPos();
+      Long absSectorNum = relativeSectorNum + this.fs.getPDStartPos() + this.fs.getAnchor().mainVolumeExtent.location;
 
       byte[] buffer = new byte[Constants.DEFAULT_BLOCK_SIZE];
       this.fs.readBlock(absSectorNum, buffer);

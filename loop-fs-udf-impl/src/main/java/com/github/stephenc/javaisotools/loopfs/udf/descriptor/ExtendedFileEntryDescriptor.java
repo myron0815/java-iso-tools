@@ -222,7 +222,7 @@ public class ExtendedFileEntryDescriptor extends FileEntryDescriptor {
       int bufferLength = ead.length.intValue();
       byte[] buffer = new byte[bufferLength];
 
-      long absStartPos = fs.getPDStartPos() + ead.location;
+      long absStartPos = fs.getPDStartPos() + fs.getAnchor().mainVolumeExtent.location + ead.location;
       int bytesRead = fs.readBytes(absStartPos * bs, buffer, 0, // bufferOffset
           bufferLength);
 
