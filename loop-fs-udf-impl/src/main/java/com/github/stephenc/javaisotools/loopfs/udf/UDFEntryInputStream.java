@@ -32,7 +32,7 @@ import com.github.stephenc.javaisotools.loopfs.udf.UDFFileSystem;
  *
  * Copied 95% of code from loopfs.iso9660.EntryInputStream
  */
-class UDFEntryInputStream extends InputStream {
+public class UDFEntryInputStream extends InputStream {
 
 	// entry within the file system
 	private UDFFileEntry entry;
