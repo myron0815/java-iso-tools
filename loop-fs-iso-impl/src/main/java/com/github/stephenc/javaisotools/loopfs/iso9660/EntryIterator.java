@@ -32,73 +32,75 @@ import com.github.stephenc.javaisotools.loopfs.util.LittleEndian;
  */
 class EntryIterator implements Iterator<Iso9660FileEntry> {
 
-    private final Iso9660FileSystem fileSystem;
-    private final List<Iso9660FileEntry> queue;
+  private final Iso9660FileSystem      fileSystem;
+  private final List<Iso9660FileEntry> queue;
 
-    public EntryIterator(final Iso9660FileSystem fileSystem, final Iso9660FileEntry rootEntry) {
-        this.fileSystem = fileSystem;
-        this.queue = new LinkedList<Iso9660FileEntry>();
-        if (rootEntry != null){
-            this.queue.add(rootEntry);
-        }
+  public EntryIterator(final Iso9660FileSystem fileSystem, final Iso9660FileEntry rootEntry) {
+    this.fileSystem = fileSystem;
+    this.queue = new LinkedList<>();
+    if (rootEntry != null) {
+      this.queue.add(rootEntry);
+    }
+  }
+
+  public boolean hasNext() {
+    return !this.queue.isEmpty();
+  }
+
+  public Iso9660FileEntry next() {
+    if (!hasNext()) {
+      throw new NoSuchElementException();
     }
 
-    public boolean hasNext() {
-        return !this.queue.isEmpty();
-    }
+    // pop next entry from the queue
+    final Iso9660FileEntry entry = this.queue.remove(0);
 
-    public Iso9660FileEntry next() {
-        if (!hasNext()) {
-            throw new NoSuchElementException();
-        }
+    // if the entry is a directory, queue all its children
+    if (entry.isDirectory()) {
+      final byte[] content;
 
-        // pop next entry from the queue
-        final Iso9660FileEntry entry = this.queue.remove(0);
+      try {
+        content = this.fileSystem.getBytes(entry);
+      }
+      catch (IOException ex) {
+        throw new RuntimeException(ex);
+      }
 
-        // if the entry is a directory, queue all its children
-        if (entry.isDirectory()) {
-            final byte[] content;
+      int offset = 0;
+      boolean paddingMode = false;
 
-            try {
-                content = this.fileSystem.getBytes(entry);
-            }
-            catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-
-            int offset = 0;
-            boolean paddingMode = false;
-
-            while (offset < content.length) {
-                if (LittleEndian.getUInt8(content, offset) <= 0) {
-                    paddingMode = true;
-                    offset += 2;
-                    continue;
-                }
-
-                Boolean suspUsed = this.fileSystem.suspUsed();
-                Iso9660FileEntry child = new Iso9660FileEntry(
-                        this.fileSystem, entry.getPath(), content,
-                        offset + 1, suspUsed
-                );
-
-                if (paddingMode && child.getSize() < 0) {
-                    continue;
-                }
-
-                offset += child.getEntryLength();
-
-                // It doesn't seem useful to include the . and .. entries
-                if (!".".equals(child.getName()) && !"..".equals(child.getName())) {
-                    this.queue.add(child);
-                }
-            }
+      while (offset < content.length) {
+        if (LittleEndian.getUInt8(content, offset) <= 0) {
+          paddingMode = true;
+          offset += 2;
+          continue;
         }
 
-        return entry;
+        Boolean suspUsed = this.fileSystem.suspUsed();
+        Iso9660FileEntry child = new Iso9660FileEntry(this.fileSystem, entry.getPath(), content, offset + 1, suspUsed);
+
+        if (paddingMode && child.getSize() < 0) {
+          offset += 2; // just not end in an endless loop
+          continue;
+        }
+
+        offset += child.getEntryLength();
+
+        // It doesn't seem useful to include the ./../Desktop DB/Desktop DF entries
+        if (".".equals(child.getName()) || "..".equals(child.getName()) || "Desktop DB".equalsIgnoreCase(child.getName())
+            || "Desktop DF".equalsIgnoreCase(child.getName())) {
+          continue;
+        }
+        else {
+          this.queue.add(child);
+        }
+      }
     }
 
-    public void remove() {
-        throw new UnsupportedOperationException();
-    }
+    return entry;
+  }
+
+  public void remove() {
+    throw new UnsupportedOperationException();
+  }
 }

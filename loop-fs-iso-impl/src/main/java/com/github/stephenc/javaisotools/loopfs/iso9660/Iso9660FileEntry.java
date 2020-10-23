@@ -57,7 +57,7 @@ public final class Iso9660FileEntry implements FileEntry {
     private String parentPath;
     private final int entryLength;
     private final long startSector;
-    private final int dataLength;
+    private final long dataLength;
     private final long lastModifiedTime;
     private final int flags;
     private final int fidLength;
@@ -69,10 +69,15 @@ public final class Iso9660FileEntry implements FileEntry {
     // including fields not implemented.
     //
     // Currently, this list will make some redundancy.
-    private final List<SuspField> suspFields = new ArrayList<SuspField>();
+    private final List<SuspField> suspFields = new ArrayList<>();
 
     // This list contains all RRIP NM fields
-    private final List<RripFieldNM> rrnmFields = new ArrayList<RripFieldNM>();
+    private final List<RripFieldNM> rrnmFields = new ArrayList<>();
+
+    // This list contains all RRIP SL fields
+    private final List<RripFieldSL> rrslFields = new ArrayList<>();
+
+    private RripFieldPX rrpxField = null;
 
     //private final int extAttributeLength;
     //private final int fileUnitSize;
@@ -107,7 +112,7 @@ public final class Iso9660FileEntry implements FileEntry {
         this.entryLength = Util.getUInt8(block, offset + 1);
         //this.extAttributeLength = Util.getUInt8(block, offset+2);
         this.startSector = Util.getUInt32LE(block, offset + 3);
-        this.dataLength = (int) Util.getUInt32LE(block, offset + 11);
+        this.dataLength = Util.getUInt32LE(block, offset + 11);
         this.lastModifiedTime = Util.getDateTime(block, offset + 19);
         this.flags = Util.getUInt8(block, offset + 26);
         //this.fileUnitSize = Util.getUInt8(block, offset+27);
@@ -117,7 +122,7 @@ public final class Iso9660FileEntry implements FileEntry {
 
         this.suParsed = parseSu;
 
-        if (this.suParsed) {
+        if (suParsed) {
             // Util.getBytes will not minus startPos by 1.
             int suStartPos = offset + 33 + this.fidLength;
 
@@ -172,12 +177,14 @@ public final class Iso9660FileEntry implements FileEntry {
                     break;
                 case Constants.RR_FIELD_ID_PX:
                     field = new RripFieldPX(suBlock, suBp);
+                    this.rrpxField = (RripFieldPX) field;
                     break;
                 case Constants.RR_FIELD_ID_PN:
                     field = new RripFieldPN(suBlock, suBp);
                     break;
                 case Constants.RR_FIELD_ID_SL:
                     field = new RripFieldSL(suBlock, suBp);
+                    this.rrslFields.add( (RripFieldSL) field );
                     break;
                 case Constants.RR_FIELD_ID_NM:
                     field = new RripFieldNM(suBlock, suBp);
@@ -291,6 +298,35 @@ public final class Iso9660FileEntry implements FileEntry {
 
     public boolean isDirectory() {
         return (this.flags & 0x03) != 0;
+    }
+
+    public boolean isSymlink() {
+        return this.rrpxField.isSymlink();
+    }
+
+    public String getSymlinkPath() {
+        if (! this.isSymlink()) {
+            throw new RuntimeException("This is not a symbolic link");
+        }
+
+        String path = "";
+        boolean firstTime = true;
+
+        for (RripFieldSL rrsl: this.rrslFields) {
+            if (! firstTime) {
+                path += "/";
+            }
+
+            path += rrsl.getPathname();
+
+            if (! rrsl.isContinuous()) {
+                break;
+            }
+
+            firstTime = false;
+        }
+
+        return path;
     }
 
     public long getSize() {

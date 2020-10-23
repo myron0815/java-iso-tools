@@ -43,7 +43,7 @@ public class UDFEntryIterator implements Iterator<UDFFileEntry>
 
 	public UDFEntryIterator(final UDFFileSystem fs, final UDFFileEntry rootEntry) {
 		this.fs = fs;
-		this.queue = new LinkedList<UDFFileEntry>();
+		this.queue = new LinkedList<>();
 		if (rootEntry != null) {
 			this.queue.add(rootEntry);
 		}

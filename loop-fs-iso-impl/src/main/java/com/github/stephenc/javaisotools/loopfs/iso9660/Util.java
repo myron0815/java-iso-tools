@@ -116,12 +116,14 @@ public final class Util {
      * Gets a string of d-characters. See section 7.4.1.
      */
     public static String getDChars(byte[] block, int pos, int length, String encoding) {
-        try {
-            return new String(block, pos - 1, length, encoding).trim();
+        if(block.length >= pos + length) {
+            try {
+                return new String(block, pos - 1, length, encoding).trim();
+            } catch (UnsupportedEncodingException ex) {
+                throw new RuntimeException(ex);
+            }
         }
-        catch (UnsupportedEncodingException ex) {
-            throw new RuntimeException(ex);
-        }
+        return "";
     }
 
     /**
