@@ -45,9 +45,9 @@
     </modules>
 
     <scm>
-        <connection>scm:git:git://github.com/stephenc/java-iso-tools.git</connection>
-        <developerConnection>scm:git:git@github.com:stephenc/java-iso-tools.git</developerConnection>
-        <url>http://github.com/stephenc/java-iso-tools/tree/master/</url>
+        <connection>scm:git:git@gitlab.com:tinyMediaManager/java-iso-tools.git</connection>
+        <developerConnection>scm:git:git@gitlab.com:tinyMediaManager/java-iso-tools.git</developerConnection>
+        <url>https://gitlab.com/tinyMediaManager/java-iso-tools</url>
       <tag>HEAD</tag>
   </scm>
 
