@@ -21,24 +21,26 @@
 
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor.element;
 
-import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
 /**
- * The regid block (ECMA-167 1/7.4)
+ * Volume Structure Descriptor { ECMA 167 9.1
  *
  * Not implemented and not in use
  */
-public class RegId {
-	public int Flags; // Uint8
-	public byte Identifier[]; // char[23]
-	public byte IdentifierSuffix[]; // char[8]
+public class VolumeStructureDescriptor {
 
-	public static final int LENGTH = 32;
+	public Integer structureType; // Uint8
+	public byte[] standardIdentifier; // byte[5]
+	public Integer structureVersion; // Uint8
+	public byte[] structureData; // byte[2041]
 
-	public RegId(byte[] bytes) throws InvalidDescriptor {
+	public static final int LENGTH = 2048;
+
+	public VolumeStructureDescriptor(byte[] bytes) throws InvalidDescriptor {
 		this.deserialize(bytes);
 	}
 
@@ -47,18 +49,14 @@ public class RegId {
 			throw new InvalidDescriptor("RegId allocation descriptor too short");
 		}
 
-		this.Flags = UDFUtil.getUInt8(bytes, 0);
-		Identifier = UDFUtil.getBytes(bytes, 1, 23);
-		IdentifierSuffix = UDFUtil.getBytes(bytes, 24, 31);
-	}
-	
-	public String getId() {
-		return new String(Identifier);
+		structureType = UDFUtil.getUInt8(bytes, 0);
+		standardIdentifier = UDFUtil.getBytes(bytes, 1, 5);
+		structureVersion = UDFUtil.getUInt8(bytes, 0);
 	}
 
 	@Override
 	public String toString() {
-		return "RegId [Flags=" + Flags + ", Identifier=" + new String(Identifier, StandardCharsets.UTF_8).trim() + ", IdentifierSuffix=" + new String(IdentifierSuffix, StandardCharsets.UTF_8).trim() + "]";
+		return "VolumeStructureDescriptor [structureType=" + structureType + ", standardIdentifier="
+				+ Arrays.toString(standardIdentifier) + ", structureVersion=" + structureVersion + "]";
 	}
-
 }

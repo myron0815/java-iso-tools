@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -57,9 +58,11 @@ public class DString
 		} else if (compressionID == 16) {
 			charLen = 2;
 		} else {
-			throw new RuntimeException(
-				"Unknown dstring compression ID: " + compressionID.toString()
-			);
+//			throw new RuntimeException(
+//				"Unknown dstring compression ID: " + compressionID.toString()
+//			);
+//			nah, just return something... it's not critical!
+			return "Unknown dstring compression ID: " + compressionID.toString();
 		}
 
 		byte[] data = UDFUtil.getRemainingBytes(this.bytes, 1);

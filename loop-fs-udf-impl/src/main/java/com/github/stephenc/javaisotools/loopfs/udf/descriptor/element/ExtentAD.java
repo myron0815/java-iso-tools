@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -29,19 +30,11 @@ import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidExtentAD;
  */
 public class ExtentAD
 {
-	// attributes in a extent allocation descriptor (ECMA-167 figure 3/1)
 	public Long length;
 	public Long location;
 
-	// length, beginning position of these fields above
-	public final int LEN_LENGTH = 4;
-	public final int LEN_LOCATION = 4;
-
-	public final int BP_LENGTH = 0;
-	public final int BP_LOCATION = 4;
-
 	// the minimum length of a extent allocation descriptor (bytes)
-	public final int MINIMUM_LENGTH = 8;
+	public static final int LENGTH = 8;
 
 	/**
 	 * Constructor
@@ -61,13 +54,13 @@ public class ExtentAD
    *          byte array contains a raw extent allocation descriptor at the beginning
    * @throws InvalidExtentAD
    */
-  public void deserialize(byte[] bytes) throws InvalidExtentAD {
-    if (bytes.length < MINIMUM_LENGTH) {
+  private void deserialize(byte[] bytes) throws InvalidExtentAD {
+    if (bytes.length < LENGTH) {
       throw new InvalidExtentAD("extent allocation descriptor too short");
     }
     // get the extent length without the most significant 2 bits (they are indicators) 2.3.10
-    this.length = calculateLength(bytes, BP_LENGTH);
-    this.location = UDFUtil.getUInt32(bytes, BP_LOCATION);
+    this.length = calculateLength(bytes, 0);
+    this.location = UDFUtil.getUInt32(bytes, 4);
   }
 
   private static long calculateLength(byte[] src, int offset) {
@@ -77,4 +70,9 @@ public class ExtentAD
     long v3 = (long) (src[offset + 3] & 63);
     return v3 << 24 | v2 << 16 | v1 << 8 | v0;
   }
+
+	@Override
+	public String toString() {
+		return "ExtentAD [length=" + length + ", location=" + location + "]";
+}
 }

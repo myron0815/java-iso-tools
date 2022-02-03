@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -21,21 +22,39 @@
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor;
 
 import com.github.stephenc.javaisotools.loopfs.udf.Constants;
-import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.UDFDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.DString;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.CharSpec;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.DString;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.LongAD;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.RegId;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.Timestamp;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.LongAD;
-
+import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
 /**
  * The File Set Descriptor (ECMA-167 4/14.1)
  */
-public class FileSetDescriptor extends UDFDescriptor
-{
+public class FileSetDescriptor extends UDFDescriptor {
+//	struct FileSetDescriptor { /* ECMA 167 4/14.1 */
+//		struct tag DescriptorTag;
+//		struct timestamp RecordingDateandTime;
+//		Uint16 InterchangeLevel;
+//		Uint16 MaximumInterchangeLevel;
+//		Uint32 CharacterSetList;
+//		Uint32 MaximumCharacterSetList;
+//		Uint32 FileSetNumber;
+//		Uint32 FileSetDescriptorNumber;
+//		struct charspec LogicalVolumeIdentifierCharacterSet;
+//		dstring LogicalVolumeIdentifier[128];
+//		struct charspec FileSetCharacterSet;
+//		dstring FileSetIdentifier[32];
+//		dstring CopyrightFileIdentifier[32];
+//		dstring AbstractFileIdentifier[32];
+//		struct long_ad RootDirectoryICB;
+//		struct EntityID DomainIdentifier;
+//		struct long_ad NextExtent;
+//		struct long_ad SystemStreamDirectoryICB;
+//		byte Reserved[32];
+//	}
+
 	public Timestamp recordDateTime;
 	public Integer interchangeLevel;
 	public Integer maxInterchangeLevel;
@@ -54,66 +73,8 @@ public class FileSetDescriptor extends UDFDescriptor
 	public LongAD nextExtent;
 	public LongAD sysStreamDirICB;
 
-	// length, beginning position, ending position of these fields above
-	public final int LEN_RECORD_DT = 12;
-	public final int LEN_INTERCH_LVL = 2;
-	public final int LEN_MAX_INTERCH_LVL = 2;
-	public final int LEN_CHARSET_LIST = 4;
-	public final int LEN_MAX_CHARSET_LIST = 4;
-	public final int LEN_FSET_NUM = 4;
-	public final int LEN_FSET_DESC_NUM = 4;
-	public final int LEN_LV_ID_CHARSET = 64;
-	public final int LEN_LV_ID = 128;
-	public final int LEN_FSET_CHARSET = 64;
-	public final int LEN_FSET_ID = 32;
-	public final int LEN_COPYRIGHT_FID = 32;
-	public final int LEN_ABSTRACT_FID = 32;
-	public final int LEN_ROOT_DIR_ICB = 16;
-	public final int LEN_DOMAIN_ID = 32;
-	public final int LEN_NEXT_EXTENT = 16;
-	public final int LEN_STREAM_DIR_ICB = 16;
-	public final int LEN_RESERVED = 32;
-
-	public final int BP_RECORD_DT = 16;
-	public final int BP_INTERCH_LVL = 28;
-	public final int BP_MAX_INTERCH_LVL = 30;
-	public final int BP_CHARSET_LIST = 32;
-	public final int BP_MAX_CHARSET_LIST = 36;
-	public final int BP_FSET_NUM = 40;
-	public final int BP_FSET_DESC_NUM = 44;
-	public final int BP_LV_ID_CHARSET = 48;
-	public final int BP_LV_ID = 112;
-	public final int BP_FSET_CHARSET = 240;
-	public final int BP_FSET_ID = 304;
-	public final int BP_COPYRIGHT_FID = 336;
-	public final int BP_ABSTRACT_FID = 368;
-	public final int BP_ROOT_DIR_ICB = 400;
-	public final int BP_DOMAIN_ID = 416;
-	public final int BP_NEXT_EXTENT = 448;
-	public final int BP_STREAM_DIR_ICB = 464;
-	public final int BP_RESERVED = 480;
-
-	public final int EP_RECORD_DT = BP_RECORD_DT + LEN_RECORD_DT;
-	public final int EP_INTERCH_LVL = BP_INTERCH_LVL + LEN_INTERCH_LVL;
-	public final int EP_MAX_INTERCH_LVL = BP_MAX_INTERCH_LVL + LEN_MAX_INTERCH_LVL;
-	public final int EP_CHARSET_LIST = BP_CHARSET_LIST + LEN_CHARSET_LIST;
-	public final int EP_MAX_CHARSET_LIST = BP_MAX_CHARSET_LIST + LEN_MAX_CHARSET_LIST;
-	public final int EP_FSET_NUM = BP_FSET_NUM + LEN_FSET_NUM;
-	public final int EP_FSET_DESC_NUM = BP_FSET_DESC_NUM + LEN_FSET_DESC_NUM;
-	public final int EP_LV_ID_CHARSET = BP_LV_ID_CHARSET + LEN_LV_ID_CHARSET;
-	public final int EP_LV_ID = BP_LV_ID + LEN_LV_ID;
-	public final int EP_FSET_CHARSET = BP_FSET_CHARSET + LEN_FSET_CHARSET;
-	public final int EP_FSET_ID = BP_FSET_ID + LEN_FSET_ID;
-	public final int EP_COPYRIGHT_FID = BP_COPYRIGHT_FID + LEN_COPYRIGHT_FID;
-	public final int EP_ABSTRACT_FID = BP_ABSTRACT_FID + LEN_ABSTRACT_FID;
-	public final int EP_ROOT_DIR_ICB = BP_ROOT_DIR_ICB + LEN_ROOT_DIR_ICB;
-	public final int EP_DOMAIN_ID = BP_DOMAIN_ID + LEN_DOMAIN_ID;
-	public final int EP_NEXT_EXTENT = BP_NEXT_EXTENT + LEN_NEXT_EXTENT;
-	public final int EP_STREAM_DIR_ICB = BP_STREAM_DIR_ICB + LEN_STREAM_DIR_ICB;
-	public final int EP_RESERVED = BP_RESERVED + LEN_RESERVED;
-
 	// minimum length of a file set descriptor (field "Reserved" included)
-	public final int MINIMUM_LENGTH = 512;
+	public static final int LENGTH = 512;
 
 	public FileSetDescriptor() {
 		super();
@@ -130,52 +91,29 @@ public class FileSetDescriptor extends UDFDescriptor
 
 	@Override
 	public void deserialize(byte[] bytes) throws InvalidDescriptor {
-		if (bytes.length < MINIMUM_LENGTH) {
+		if (bytes.length < LENGTH) {
 			throw new InvalidDescriptor("File set descriptor too short");
 		}
-
-		byte[] fragment;
-
 		this.deserializeTag(bytes);
 
-		fragment = UDFUtil.getBytes(bytes, BP_RECORD_DT, LEN_RECORD_DT);
-		this.recordDateTime = new Timestamp(fragment);
-
-		this.interchangeLevel = UDFUtil.getUInt16(bytes, BP_INTERCH_LVL);
-		this.maxInterchangeLevel = UDFUtil.getUInt16(bytes, BP_MAX_INTERCH_LVL);
-		this.charsetList = UDFUtil.getUInt32(bytes, BP_CHARSET_LIST);
-		this.maxCharsetList = UDFUtil.getUInt32(bytes, BP_MAX_CHARSET_LIST);
-		this.fileSetNum = UDFUtil.getUInt32(bytes, BP_FSET_NUM);
-		this.fileSetDescriptorNum = UDFUtil.getUInt32(bytes, BP_FSET_DESC_NUM);
-
-		fragment = UDFUtil.getBytes(bytes, BP_LV_ID_CHARSET, LEN_LV_ID_CHARSET);
-		this.lvIdentifierCharset = new CharSpec(fragment);
-
-		fragment = UDFUtil.getBytes(bytes, BP_LV_ID, LEN_LV_ID);
-		this.lvIdentifier = new DString(fragment);
-
-		fragment = UDFUtil.getBytes(bytes, BP_FSET_CHARSET, LEN_FSET_CHARSET);
-		this.fileSetCharset = new CharSpec(fragment);
-
-		fragment = UDFUtil.getBytes(bytes, BP_FSET_ID, LEN_FSET_ID);
-		this.fileSetIdentifier = new DString(fragment);
-
-		fragment = UDFUtil.getBytes(bytes, BP_COPYRIGHT_FID, LEN_COPYRIGHT_FID);
-		this.copyrightFileId = new DString(fragment);
-
-		fragment = UDFUtil.getBytes(bytes, BP_ABSTRACT_FID, LEN_ABSTRACT_FID);
-		this.abstractFileId = new DString(fragment);
-
-		fragment = UDFUtil.getBytes(bytes, BP_ROOT_DIR_ICB, LEN_ROOT_DIR_ICB);
-		this.rootICB = new LongAD(fragment);
-
-		fragment = UDFUtil.getBytes(bytes, BP_DOMAIN_ID, LEN_DOMAIN_ID);
-		this.domainIdentifier = new RegId(fragment);
-
-		fragment = UDFUtil.getBytes(bytes, BP_NEXT_EXTENT, LEN_NEXT_EXTENT);
-		this.nextExtent = new LongAD(fragment);
-
-		fragment = UDFUtil.getBytes(bytes, BP_STREAM_DIR_ICB, LEN_STREAM_DIR_ICB);
-		this.sysStreamDirICB = new LongAD(fragment);
+		this.recordDateTime = new Timestamp(getBytes(bytes, Timestamp.LENGTH));
+		this.interchangeLevel = getUInt16(bytes);
+		this.maxInterchangeLevel = getUInt16(bytes);
+		this.charsetList = getUInt32(bytes);
+		this.maxCharsetList = getUInt32(bytes);
+		this.fileSetNum = getUInt32(bytes);
+		this.fileSetDescriptorNum = getUInt32(bytes);
+		this.lvIdentifierCharset = new CharSpec(getBytes(bytes, CharSpec.LENGTH));
+		this.lvIdentifier = new DString(getBytes(bytes, 128));
+		this.fileSetCharset = new CharSpec(getBytes(bytes, CharSpec.LENGTH));
+		this.fileSetIdentifier = new DString(getBytes(bytes, 32));
+		this.copyrightFileId = new DString(getBytes(bytes, 32));
+		this.abstractFileId = new DString(getBytes(bytes, 32));
+		this.rootICB = new LongAD(getBytes(bytes, LongAD.LENGTH));
+		this.domainIdentifier = new RegId(getBytes(bytes, RegId.LENGTH));
+		this.nextExtent = new LongAD(getBytes(bytes, LongAD.LENGTH));
+		this.sysStreamDirICB = new LongAD(getBytes(bytes, LongAD.LENGTH));
+		
+		currentPos = LENGTH; // set to end
 	}
 }

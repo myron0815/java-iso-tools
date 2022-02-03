@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -20,17 +21,27 @@
 
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor.element;
 
+import java.nio.charset.StandardCharsets;
+
+import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidICBTag;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidLBAddr;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.LBAddr;
-
 
 /**
  * The ICB Tag (ECMA-167 4/14.6)
  */
-public class ICBTag
-{
+public class ICBTag {
+//	struct icbtag { /* ECMA 167 4/14.6 */
+//		Uint32 PriorRecordedNumberofDirectEntries;
+//		Uint16 StrategyType;
+//		byte StrategyParameter[2];
+//		Uint16 MaximumNumberofEntries;
+//		byte Reserved;
+//		Uint8 FileType;
+//		Lb_addr ParentICBLocation;
+//		Uint16 Flags;
+//	}
+
 	public Long priorEntryNum;
 	public Integer strategyType;
 	public byte[] strategyParam;
@@ -40,42 +51,14 @@ public class ICBTag
 	public LBAddr parentICBLocation;
 	public Integer flags;
 
-	// length, beginning position, ending position of these fields above
-	public final int LEN_PRI_ENT_NUM = 4;
-	public final int LEN_STG_TYPE = 2;
-	public final int LEN_STG_PARAM = 2;
-	public final int LEN_MAX_ENTRIES = 2;
-	public final int LEN_RESERVED = 1;
-	public final int LEN_FILE_TYPE = 1;
-	public final int LEN_P_ICB_LOC = 6;
-	public final int LEN_FLAGS = 2;
-
-	public final int BP_PRI_ENT_NUM = 0;
-	public final int BP_STG_TYPE = 4;
-	public final int BP_STG_PARAM = 6;
-	public final int BP_MAX_ENTRIES = 8;
-	public final int BP_RESERVED = 10;
-	public final int BP_FILE_TYPE = 11;
-	public final int BP_P_ICB_LOC = 12;
-	public final int BP_FLAGS = 18;
-
-	public final int EP_PRI_ENT_NUM = BP_PRI_ENT_NUM + LEN_PRI_ENT_NUM;
-	public final int EP_STG_TYPE = BP_STG_TYPE + LEN_STG_TYPE;
-	public final int EP_STG_PARAM = BP_STG_PARAM + LEN_STG_PARAM;
-	public final int EP_MAX_ENTRIES = BP_MAX_ENTRIES + LEN_MAX_ENTRIES;
-	public final int EP_RESERVED = BP_RESERVED + LEN_RESERVED;
-	public final int EP_FILE_TYPE = BP_FILE_TYPE + LEN_FILE_TYPE;
-	public final int EP_P_ICB_LOC = BP_P_ICB_LOC + LEN_P_ICB_LOC;
-	public final int EP_FLAGS = BP_FLAGS + LEN_FLAGS;
-
 	// the minimum length of an ICB tag (bytes)
-	public final int MINIMUM_LENGTH = 20;
+	public static final int LENGTH = 20;
 
 	/**
 	 * Constructor
 	 *
-	 * @param bytes byte array contains a raw logical
-	 *              block address descriptor at the beginning
+	 * @param bytes byte array contains a raw logical block address descriptor at
+	 *              the beginning
 	 * @throws InvalidICBTag
 	 */
 	public ICBTag(byte[] bytes) throws InvalidICBTag {
@@ -85,39 +68,45 @@ public class ICBTag
 	/**
 	 * deserialize bytes of a raw logical block address descriptor
 	 *
-	 * @param bytes byte array contains a raw logical
-	 *              block address descriptor at the beginning
+	 * @param bytes byte array contains a raw logical block address descriptor at
+	 *              the beginning
 	 * @throws InvalidICBTag
 	 */
 	public void deserialize(byte[] bytes) throws InvalidICBTag {
-		if (bytes.length < MINIMUM_LENGTH) {
+		if (bytes.length < LENGTH) {
 			throw new InvalidICBTag("ICB tag too short");
 		}
 
 		byte[] fragment;
 
-		this.priorEntryNum = UDFUtil.getUInt32(bytes, BP_PRI_ENT_NUM);
-		this.strategyType = UDFUtil.getUInt16(bytes, BP_STG_TYPE);
+		this.priorEntryNum = UDFUtil.getUInt32(bytes, 0);
+		this.strategyType = UDFUtil.getUInt16(bytes, 4);
 
 		// OSTA-UDF 2.3.5.1
 		// Strategy 4096 is not supported as well.
 		if (this.strategyType != 4) {
-			throw new InvalidICBTag(
-				"Unsupported ICB strategy: " + this.strategyType
-			);
+			throw new InvalidICBTag("Unsupported ICB strategy: " + this.strategyType);
 		}
 
-		this.strategyParam = UDFUtil.getBytes(bytes, BP_STG_PARAM, LEN_STG_PARAM);
-		this.maxEntries = UDFUtil.getUInt16(bytes, BP_MAX_ENTRIES);
-		this.fileType = UDFUtil.getUInt8(bytes, BP_FILE_TYPE);
+		this.strategyParam = UDFUtil.getBytes(bytes, 6, 2);
+		this.maxEntries = UDFUtil.getUInt16(bytes, 8);
+		// 1 byte reserved
+		this.fileType = UDFUtil.getUInt8(bytes, 11);
 
-		fragment = UDFUtil.getBytes(bytes, BP_P_ICB_LOC, LEN_P_ICB_LOC);
+		fragment = UDFUtil.getBytes(bytes, 12, 6);
 		try {
 			this.parentICBLocation = new LBAddr(fragment);
 		} catch (InvalidLBAddr ex) {
 			throw new InvalidICBTag(ex.getMessage());
 		}
 
-		this.flags = UDFUtil.getUInt16(bytes, BP_FLAGS);
+		this.flags = UDFUtil.getUInt16(bytes, 18);
+	}
+
+	@Override
+	public String toString() {
+		return "ICBTag [priorEntryNum=" + priorEntryNum + ", strategyType=" + strategyType + ", strategyParam="
+				+ new String(strategyParam, StandardCharsets.UTF_8).trim() + ", maxEntries=" + maxEntries
+				+ ", fileType=" + fileType + ", parentICBLocation=" + parentICBLocation + ", flags=" + flags + "]";
 	}
 }

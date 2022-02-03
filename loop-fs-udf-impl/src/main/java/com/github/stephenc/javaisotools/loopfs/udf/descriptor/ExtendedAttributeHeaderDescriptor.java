@@ -22,56 +22,46 @@
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor;
 
 import com.github.stephenc.javaisotools.loopfs.udf.Constants;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.ExtentAD;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
 /**
- * The Anchor Volume Pointer Descriptor (ECMA-167 3/10.2)
+ * The Extended Attribute Header Descriptor (ECMA 167 4/14.10.1)
  */
-public class AnchorDescriptor extends UDFDescriptor {
+public class ExtendedAttributeHeaderDescriptor extends UDFDescriptor {
 
-//	struct AnchorVolumeDescriptorPointer { /* ECMA 167 3/10.2 */
+//	struct ExtendedAttributeHeaderDescriptor { /* ECMA 167 4/14.10.1 */
 //		struct tag DescriptorTag;
-//		struct extent_ad MainVolumeDescriptorSequenceExtent;
-//		struct extent_ad ReserveVolumeDescriptorSequenceExtent;
-//		byte Reserved[480];
+//		Uint32 ImplementationAttributesLocation;
+//		Uint32 ApplicationAttributesLocation;
 //	}
 
-	public ExtentAD mainVolumeExtent;
-	public ExtentAD reserveVolumeExtent;
+	public long implementationAttributesLocation;
+	public long applicationAttributesLocation;
 
-	// minimum length of an anchor descriptor (field "Reserved" included)
-	public static final int LENGTH = 512;
+	// minimum length of an unallocated space descriptor (field "Reserved" included)
+	public static final int LENGTH = 24;
 
-	public AnchorDescriptor() {
+	public ExtendedAttributeHeaderDescriptor() {
 		super();
 	}
 
-	public AnchorDescriptor(byte[] bytes) throws InvalidDescriptor {
+	public ExtendedAttributeHeaderDescriptor(byte[] bytes) throws InvalidDescriptor {
 		super(bytes);
 	}
 
 	@Override
 	public int getExpectedTagIdentifier() {
-		return Constants.D_TYPE_ANCHOR_POINTER;
+		return Constants.D_TYPE_EXTENDED_ATTRIBUTE_HEADER;
 	}
 
 	@Override
 	public void deserialize(byte[] bytes) throws InvalidDescriptor {
 		if (bytes.length < LENGTH) {
-			throw new InvalidDescriptor("Anchor descriptor too short");
+			throw new InvalidDescriptor("Extended Attribute Header Descriptor too short");
 		}
 		this.deserializeTag(bytes);
 
-		this.mainVolumeExtent = new ExtentAD(getBytes(bytes, ExtentAD.LENGTH));
-		this.reserveVolumeExtent = new ExtentAD(getBytes(bytes, ExtentAD.LENGTH));
-
-		currentPos = LENGTH; // set to end
-	}
-
-	@Override
-	public String toString() {
-		return "AnchorDescriptor [mainVolumeExtent=" + mainVolumeExtent + ", reserveVolumeExtent=" + reserveVolumeExtent
-				+ "]";
+		this.implementationAttributesLocation = getUInt32(bytes);
+		this.applicationAttributesLocation = getUInt32(bytes);
 	}
 }

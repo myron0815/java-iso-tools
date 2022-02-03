@@ -106,7 +106,17 @@ public class Iso9660FileSystem extends AbstractBlockFileSystem<Iso9660FileEntry>
                 return new EntryIterator(this, rootEntry);
             }
         }
-
+    }
+    
+    public Iso9660VolumeDescriptorSet getIso9660DescriptorSet() {
+        if (null == this.volumeDescriptorSet) {
+            try {
+                loadVolumeDescriptors();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+        return (Iso9660VolumeDescriptorSet) getVolumeDescriptorSet();
     }
 
     protected VolumeDescriptorSet<Iso9660FileEntry> createVolumeDescriptorSet() {

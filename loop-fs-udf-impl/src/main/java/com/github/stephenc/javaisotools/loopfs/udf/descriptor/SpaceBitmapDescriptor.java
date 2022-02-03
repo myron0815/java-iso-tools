@@ -22,56 +22,51 @@
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor;
 
 import com.github.stephenc.javaisotools.loopfs.udf.Constants;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.ExtentAD;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
 /**
- * The Anchor Volume Pointer Descriptor (ECMA-167 3/10.2)
+ * The Space Bitmap Descriptor (ECMA 167 4/14.12)<br>
+ * A Space Bitmap descriptor specifies a bit for every logical block in the
+ * partition
  */
-public class AnchorDescriptor extends UDFDescriptor {
+public class SpaceBitmapDescriptor extends UDFDescriptor {
 
-//	struct AnchorVolumeDescriptorPointer { /* ECMA 167 3/10.2 */
-//		struct tag DescriptorTag;
-//		struct extent_ad MainVolumeDescriptorSequenceExtent;
-//		struct extent_ad ReserveVolumeDescriptorSequenceExtent;
-//		byte Reserved[480];
+//	struct SpaceBitmap { /* ECMA 167 4/14.12 */
+//		struct Tag DescriptorTag;
+//		Uint32 NumberOfBits;
+//		Uint32 NumberOfBytes;
+//		byte Bitmap[];
 //	}
 
-	public ExtentAD mainVolumeExtent;
-	public ExtentAD reserveVolumeExtent;
+	public Long numberOfBits;
+	public Long numberOfBytes;
+	public byte[] bitmap;
 
-	// minimum length of an anchor descriptor (field "Reserved" included)
-	public static final int LENGTH = 512;
+	// minimum length (excl bitmap)
+	public final int MINIMUM_LENGTH = 24;
 
-	public AnchorDescriptor() {
+	public SpaceBitmapDescriptor() {
 		super();
 	}
 
-	public AnchorDescriptor(byte[] bytes) throws InvalidDescriptor {
+	public SpaceBitmapDescriptor(byte[] bytes) throws InvalidDescriptor {
 		super(bytes);
 	}
 
 	@Override
 	public int getExpectedTagIdentifier() {
-		return Constants.D_TYPE_ANCHOR_POINTER;
+		return Constants.D_TYPE_SPACE_BITMAP_DESCRIPTOR;
 	}
 
 	@Override
 	public void deserialize(byte[] bytes) throws InvalidDescriptor {
-		if (bytes.length < LENGTH) {
-			throw new InvalidDescriptor("Anchor descriptor too short");
+		if (bytes.length < MINIMUM_LENGTH) {
+			throw new InvalidDescriptor("Space Bitmap descriptor too short");
 		}
 		this.deserializeTag(bytes);
 
-		this.mainVolumeExtent = new ExtentAD(getBytes(bytes, ExtentAD.LENGTH));
-		this.reserveVolumeExtent = new ExtentAD(getBytes(bytes, ExtentAD.LENGTH));
-
-		currentPos = LENGTH; // set to end
-	}
-
-	@Override
-	public String toString() {
-		return "AnchorDescriptor [mainVolumeExtent=" + mainVolumeExtent + ", reserveVolumeExtent=" + reserveVolumeExtent
-				+ "]";
+		this.numberOfBits = getUInt32(bytes);
+		this.numberOfBytes = getUInt32(bytes);
+		this.bitmap = getBytes(bytes, this.numberOfBytes.intValue());
 	}
 }

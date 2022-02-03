@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -33,15 +34,8 @@ public class LBAddr
 	public Long blockNumber;
 	public Integer partitionReferenceNumber;
 
-	// length, beginning position of these fields above
-	public final int LEN_BLOCK_NUM = 4;
-	public final int LEN_PARTITION_REF = 4;
-
-	public final int BP_BLOCK_NUM = 0;
-	public final int BP_PARTITION_REF = 4;
-
 	// the minimum length of a logical block address descriptor (bytes)
-	public final int MINIMUM_LENGTH = 6;
+	public static final int LENGTH = 6;
 
 	/**
 	 * Constructor
@@ -62,11 +56,16 @@ public class LBAddr
 	 * @throws InvalidLBAddr
 	 */
 	public void deserialize(byte[] bytes) throws InvalidLBAddr {
-		if (bytes.length < MINIMUM_LENGTH) {
+		if (bytes.length < LENGTH) {
 			throw new InvalidLBAddr("logical block address descriptor too short");
 		}
 
-		this.blockNumber = UDFUtil.getUInt32(bytes, BP_BLOCK_NUM);
-		this.partitionReferenceNumber = UDFUtil.getUInt16(bytes, BP_PARTITION_REF);
+		this.blockNumber = UDFUtil.getUInt32(bytes, 0);
+		this.partitionReferenceNumber = UDFUtil.getUInt16(bytes, 4);
+	}
+
+	@Override
+	public String toString() {
+		return "LBAddr [blockNumber=" + blockNumber + ", partitionReferenceNumber=" + partitionReferenceNumber + "]";
 	}
 }

@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -67,13 +68,22 @@ public interface Constants {
 	 */
 	int D_TYPE_PRIMARY_VOLUME = 1;
 	int D_TYPE_ANCHOR_POINTER = 2;
-	int D_TYPE_POINTER = 3;
+	int D_TYPE_VOLUME_DESCRIPTOR_POINTER = 3;
 	int D_TYPE_IMPL_USE = 4;
 	int D_TYPE_PARTITION = 5;
 	int D_TYPE_LOGICAL_VOLUME = 6;
 	int D_TYPE_UNALLOCATED_SPACE = 7;
 	int D_TYPE_TERMINATING = 8;
 	int D_TYPE_LOGICAL_VOLUME_INTEGRITY = 9;
+	
+	int D_TYPE_VIRTUAL_ALLOCATION_TABLE = 248;
+	int D_TYPE_REAL_TIME_FILE = 249;
+	int D_TYPE_METADATA_FILE = 250;
+	int D_TYPE_METADATA_FILE_MIRROR = 251;
+	int D_TYPE_METADATA_BITMAP_FILE = 252;
+	// 253 shall not be used
+	// 254 shall not be used
+	// 255 shall not be used
 	int D_TYPE_FILE_SET = 256;
 	int D_TYPE_FILE_IDENTIFIER = 257;
 	int D_TYPE_ALLOCATION_EXTENT = 258;

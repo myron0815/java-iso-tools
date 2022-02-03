@@ -30,4 +30,9 @@ public class SeekableInputFile implements SeekableInput {
     public void close() throws IOException {
         this.channel.close();
     }
+
+	@Override
+	public long getFilesize() throws IOException {
+		return this.channel.length();
+	}
 }

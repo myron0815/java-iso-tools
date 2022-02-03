@@ -32,7 +32,7 @@ public abstract class AbstractBlockFileSystem<T extends FileEntry> extends Abstr
 
     private final int blockSize;
     private int reservedBlocks;
-    private VolumeDescriptorSet<T> volumeDescriptorSet;
+    protected VolumeDescriptorSet<T> volumeDescriptorSet;
 
     protected AbstractBlockFileSystem(final SeekableInput seekable, final boolean readOnly, final int blockSize,
                                       final int reservedBlocks)

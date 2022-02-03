@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -122,7 +123,7 @@ public class UDFFileEntry implements FileEntry {
 
     for (FileIdentifierDescriptor fid : this.icb.fids) {
       Long relativeSectorNum = fid.icb.location.blockNumber;
-      Long absSectorNum = relativeSectorNum + this.fs.getPDStartPos() + this.fs.getAnchor().mainVolumeExtent.location;
+      Long absSectorNum = relativeSectorNum + this.fs.getFSDloc();
 
       byte[] buffer = new byte[Constants.DEFAULT_BLOCK_SIZE];
       this.fs.readBlock(absSectorNum, buffer);

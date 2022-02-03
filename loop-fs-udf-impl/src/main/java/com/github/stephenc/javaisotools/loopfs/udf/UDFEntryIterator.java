@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -21,16 +22,13 @@
 package com.github.stephenc.javaisotools.loopfs.udf;
 
 import java.io.IOException;
-
-import java.util.List;
-import java.util.LinkedList;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.NoSuchElementException;
 
-import com.github.stephenc.javaisotools.loopfs.udf.UDFFileEntry;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFFileSystem;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileEntryDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileIdentifierDescriptor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 
 /**
@@ -38,12 +36,13 @@ import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileIdentifierDesc
  */
 public class UDFEntryIterator implements Iterator<UDFFileEntry>
 {
+	private static final Log log = LogFactory.getLog(UDFEntryIterator.class);
 	private final UDFFileSystem fs;
 	private final List<UDFFileEntry> queue;
 
 	public UDFEntryIterator(final UDFFileSystem fs, final UDFFileEntry rootEntry) {
 		this.fs = fs;
-		this.queue = new LinkedList<>();
+		this.queue = new LinkedList<UDFFileEntry>();
 		if (rootEntry != null) {
 			this.queue.add(rootEntry);
 		}
@@ -64,9 +63,11 @@ public class UDFEntryIterator implements Iterator<UDFFileEntry>
 			try {
 				entry.loadFiles();
 				for ( UDFFileEntry fe : entry.getFiles() ) {
+					log.debug("found FileEntry: " + fe.getPath());
 					this.queue.add(fe);
 				}
-			} catch (IOException ex) {
+			} catch (Exception ex) {
+				log.error("Could not load files!" + ex);
 				throw new RuntimeException(ex);
 			}
 		}
