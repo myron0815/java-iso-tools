@@ -58,7 +58,8 @@ class EntryInputStream extends InputStream {
         int toRead = len;
 
         if (toRead > this.rem) {
-            toRead = (int) this.rem;
+            // down cast is safe as toRead is int and greater than this.rem
+            toRead = (int)this.rem;
         }
 
         int read;
