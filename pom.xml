@@ -42,6 +42,7 @@
         <module>loop-fs-iso-impl</module>
         <module>loop-fs-udf-impl</module>
         <module>iso9660-vfs-impl</module>
+        <module>loop-fs-spi-hadoop</module>
     </modules>
 
     <scm>

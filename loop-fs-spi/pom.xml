@@ -47,11 +47,6 @@
             <artifactId>loop-fs-api</artifactId>
             <version>2.1.1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-client</artifactId>
-            <version>2.6.0</version>
-        </dependency>
     </dependencies>
 
 </project>

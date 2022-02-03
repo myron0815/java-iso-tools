@@ -1,10 +1,9 @@
 package com.github.stephenc.javaisotools.loopfs.spi;
 
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
-
 import java.io.IOException;
 import java.io.InputStream;
+
+import org.apache.hadoop.fs.FSDataInputStream;
 
 /**
  * A Seekable Input File to work with Apache Hadoop HDFS
