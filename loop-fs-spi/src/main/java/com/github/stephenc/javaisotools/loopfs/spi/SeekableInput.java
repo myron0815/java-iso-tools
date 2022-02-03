@@ -23,4 +23,6 @@ public interface SeekableInput {
      * @see RandomAccessFile#close()
      */
     void close() throws IOException;
+    
+    long getFilesize() throws IOException;
 }

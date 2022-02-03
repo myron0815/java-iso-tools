@@ -21,8 +21,6 @@
 
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor.element;
 
-import java.nio.charset.StandardCharsets;
-
 import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
@@ -31,34 +29,38 @@ import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
  *
  * Not implemented and not in use
  */
-public class RegId {
-	public int Flags; // Uint8
-	public byte Identifier[]; // char[23]
-	public byte IdentifierSuffix[]; // char[8]
+public class PartitionHeader {
 
-	public static final int LENGTH = 32;
+//	struct PartitionHeaderDescriptor { /* ECMA 167 4/14.3 */
+//		struct short_ad UnallocatedSpaceTable;
+//		struct short_ad UnallocatedSpaceBitmap;
+//		struct short_ad PartitionIntegrityTable;
+//		struct short_ad FreedSpaceTable;
+//		struct short_ad FreedSpaceBitmap;
+//		byte Reserved[88];
+//	}
 
-	public RegId(byte[] bytes) throws InvalidDescriptor {
+  ExtentAD unallocatedSpaceTable;
+  ExtentAD unallocatedSpaceBitmap;
+  ExtentAD partitionIntegrityTable;
+  ExtentAD freedSpaceTable;
+  ExtentAD freedSpaceBitmap;
+
+	public static final int LENGTH = 128;
+
+	public PartitionHeader(byte[] bytes) throws InvalidDescriptor {
 		this.deserialize(bytes);
 	}
 
-	private void deserialize(byte[] bytes) throws InvalidDescriptor {
+	public void deserialize(byte[] bytes) throws InvalidDescriptor {
 		if (bytes.length < LENGTH) {
-			throw new InvalidDescriptor("RegId allocation descriptor too short");
+			throw new InvalidDescriptor("Partition header allocation descriptor too short");
 		}
 
-		this.Flags = UDFUtil.getUInt8(bytes, 0);
-		Identifier = UDFUtil.getBytes(bytes, 1, 23);
-		IdentifierSuffix = UDFUtil.getBytes(bytes, 24, 31);
+		this.unallocatedSpaceTable = new ExtentAD(UDFUtil.getBytes(bytes, 0, ExtentAD.LENGTH));
+		this.unallocatedSpaceBitmap = new ExtentAD(UDFUtil.getBytes(bytes, 8, ExtentAD.LENGTH));
+		this.partitionIntegrityTable = new ExtentAD(UDFUtil.getBytes(bytes, 16, ExtentAD.LENGTH));
+		this.freedSpaceTable = new ExtentAD(UDFUtil.getBytes(bytes, 24, ExtentAD.LENGTH));
+		this.freedSpaceBitmap = new ExtentAD(UDFUtil.getBytes(bytes, 32, ExtentAD.LENGTH));
 	}
-	
-	public String getId() {
-		return new String(Identifier);
-	}
-
-	@Override
-	public String toString() {
-		return "RegId [Flags=" + Flags + ", Identifier=" + new String(Identifier, StandardCharsets.UTF_8).trim() + ", IdentifierSuffix=" + new String(IdentifierSuffix, StandardCharsets.UTF_8).trim() + "]";
-	}
-
 }

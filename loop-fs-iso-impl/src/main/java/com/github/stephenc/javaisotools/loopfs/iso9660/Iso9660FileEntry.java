@@ -297,7 +297,7 @@ public final class Iso9660FileEntry implements FileEntry {
     }
 
     public boolean isDirectory() {
-        return (this.flags & 0x03) != 0;
+        return (this.flags & (1<<1)) != 0;
     }
 
     public boolean isSymlink() {

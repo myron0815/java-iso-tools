@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -30,50 +31,34 @@ import com.github.stephenc.javaisotools.loopfs.spi.SeekableInput;
 import com.github.stephenc.javaisotools.loopfs.spi.SeekableInputFile;
 import com.github.stephenc.javaisotools.loopfs.spi.VolumeDescriptorSet;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.AnchorDescriptor;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.FileEntryDescriptor;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.ExtentAD;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.UnsupportedStandard;
 
-
-public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
-{
+public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry> {
 	private AnchorDescriptor anchor;
+	public long maxBlock = 0L;
 
-	public UDFFileSystem(
-		File file,
-		boolean readOnly
-	) throws IOException {
-		this(
-			new SeekableInputFile(file),
-			readOnly,
-			Constants.DEFAULT_BLOCK_SIZE
-		);
+	public UDFFileSystem(File file, boolean readOnly) throws IOException {
+		this(new SeekableInputFile(file), readOnly, Constants.DEFAULT_BLOCK_SIZE);
 	}
 
 	/**
 	 * Constructor.
 	 *
-	 * In AbstractBlockFileSystem.loadVolumeDescriptors method, descriptors
-	 * will be read sequentially from the first block after reserved blocks.
-	 * However, volume descriptors in UDF shall be read from the block
-	 * which the Anchor pointed out. And the Anchor is actually the first block
-	 * after those reserved blocks (basically).
+	 * In AbstractBlockFileSystem.loadVolumeDescriptors method, descriptors will be
+	 * read sequentially from the first block after reserved blocks. However, volume
+	 * descriptors in UDF shall be read from the block which the Anchor pointed out.
+	 * And the Anchor is actually the first block after those reserved blocks
+	 * (basically).
 	 *
-	 * For this, AbstractBlockFileSystem.reservedBlocks must be
-	 * modifiable. Otherwise, we will need to modify the Constructor of
-	 * AbstractBlockFileSystem class.
+	 * For this, AbstractBlockFileSystem.reservedBlocks must be modifiable.
+	 * Otherwise, we will need to modify the Constructor of AbstractBlockFileSystem
+	 * class.
 	 */
-	public UDFFileSystem(
-			SeekableInput file,
-			boolean readOnly,
-			Integer sectorSize
-	) throws IOException {
-		super(
-			file,
-			readOnly,
-			sectorSize,
-			Constants.RESERVED_SECTORS
-		);
+	public UDFFileSystem(SeekableInput file, boolean readOnly, Integer sectorSize) throws IOException {
+		super(file, readOnly, sectorSize, Constants.RESERVED_SECTORS);
 
 		try {
 			this.verifyStandard();
@@ -81,13 +66,12 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 			throw new IOException("Unsupported standard");
 		}
 		try {
+			maxBlock = (file.getFilesize() / Constants.DEFAULT_BLOCK_SIZE) - 1;
 			this.loadAnchor();
 		} catch (InvalidDescriptor ex) {
 			throw new IOException("Invalid Anchor Volume Pointer Descriptor");
 		}
-		this.setReservedBlocks(
-			this.anchor.mainVolumeExtent.location.intValue()
-		);
+		this.setReservedBlocks(this.anchor.mainVolumeExtent.location.intValue());
 	}
 
 	public InputStream getInputStream(UDFFileEntry entry) {
@@ -95,22 +79,12 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 		return new UDFEntryInputStream(entry, this);
 	}
 
-	public int readBytes(
-			long startPos,
-			byte[] buffer,
-			int offset,
-			int len
-	) throws IOException {
+	public int readBytes(long startPos, byte[] buffer, int offset, int len) throws IOException {
 		return readData(startPos, buffer, offset, len);
 	}
 
-	public int readFileContent(
-		UDFFileEntry entry,
-		long entryOffset,
-		byte[] buffer,
-		int bufferOffset,
-		int len
-	) throws IOException {
+	public int readFileContent(UDFFileEntry entry, long entryOffset, byte[] buffer, int bufferOffset, int len)
+			throws IOException {
 		if (entry.isDirectory()) {
 			throw new IOException("Entry is a directory");
 		}
@@ -122,6 +96,7 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 		long processed = 0L; // bytes has been processed
 		long endPosition = len + entryOffset;
 
+		// @formatter:off
 		// Here we merge fragments of the file into one piece,
 		// and compare entryOffset argument with each fragment.
 		//
@@ -166,10 +141,11 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 		//        of = 0
 		//        ln = len + entryOffset - (frag0.length + frag1.length)
 		//        result += read(of, ln)
+		// @formatter:on
 		for (ExtentAD ead : entry.getADs()) {
-      if (ead.length == 0) {
-        continue;
-      }
+			if (ead.length == 0) {
+				continue;
+			}
 			long fragLen = ead.length;
 			long fragPos = this.getPDStartPos() + ead.location;
 			offset += fragLen;
@@ -189,20 +165,20 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 			}
 
 			if (offset < endPosition) {
-        ln = offset - entryOffset;
+				ln = fragLen; // offset - entryOffset;
 			} else {
 				ln = endPosition - Math.max(processed, entryOffset);
 			}
 
 			if (ln == 0L) {
-				break;  // End Position reached
+				break; // End Position reached
 			}
 
 			long startPos = bs * fragPos + off;
-			int extentRead = readData(startPos, buffer, bufferOffset, (int)ln);
+			int extentRead = readData(startPos, buffer, bufferOffset, (int) ln);
 			processed += fragLen;
 
-			if (extentRead < ln){
+			if (extentRead < ln) {
 				read += extentRead;
 				break;
 			} else {
@@ -214,9 +190,7 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 				break;
 			} else if (read > len) {
 				// is this possible?
-				throw new IOException(
-					"byte array has been read is longer than expected"
-				);
+				throw new IOException("byte array has been read is longer than expected");
 			}
 		}
 
@@ -236,12 +210,29 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 	/**
 	 * Load the anchor descriptor.
 	 *
-	 * TODO:
-	 *     Read Anchor from block N and N - 256 (OSTA-UDF 2.2.3)
+	 * Shall be recorded in at least 2 of the following 3 locations: 256, N-256, or
+	 * N, where N is the last addressable sector of a volume. See also (OSTA-UDF
+	 * 2.2.3)
 	 */
 	private void loadAnchor() throws IOException, InvalidDescriptor {
 		byte[] buffer = new byte[Constants.DEFAULT_BLOCK_SIZE];
-		readBlock(Constants.ANCHOR_SECTOR_NUMBER, buffer);
+		boolean ok = false;
+
+		ok = readBlock(Constants.ANCHOR_SECTOR_NUMBER, buffer);
+		int type = UDFUtil.getUInt16(buffer, 0);
+		if (!ok || type != Constants.D_TYPE_ANCHOR_POINTER) {
+			ok = readBlock(maxBlock - Constants.ANCHOR_SECTOR_NUMBER, buffer);
+			type = UDFUtil.getUInt16(buffer, 0);
+		}
+		if (!ok || type != Constants.D_TYPE_ANCHOR_POINTER) {
+			ok = readBlock(maxBlock, buffer);
+			type = UDFUtil.getUInt16(buffer, 0);
+		}
+		// Write-Once media may have a single AVDP present at either sector 256 or 512.
+		if (!ok || type != Constants.D_TYPE_ANCHOR_POINTER) {
+			ok = readBlock(512, buffer);
+			type = UDFUtil.getUInt16(buffer, 0);
+		}
 		this.anchor = new AnchorDescriptor(buffer);
 	}
 
@@ -250,6 +241,13 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 	}
 
 	public UDFVolumeDescriptorSet getUDFDescriptorSet() {
+		if (null == this.volumeDescriptorSet) {
+			try {
+				loadVolumeDescriptors();
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
+			}
+		}
 		return (UDFVolumeDescriptorSet) this.getVolumeDescriptorSet();
 	}
 
@@ -262,10 +260,17 @@ public class UDFFileSystem extends AbstractBlockFileSystem<UDFFileEntry>
 	}
 
 	/**
+	 * Gets the starting location of the FSD
+	 */
+	public long getFSDloc() {
+		UDFVolumeDescriptorSet ds = this.getUDFDescriptorSet();
+		return ds.getFSDloc();
+	}
+
+	/**
 	 * Check if the standard in volume structure descriptors has been supported.
 	 *
-	 * TODO:
-	 *     Implement it.
+	 * TODO: Implement it.
 	 *
 	 * @throws UnsupportedStandard
 	 */

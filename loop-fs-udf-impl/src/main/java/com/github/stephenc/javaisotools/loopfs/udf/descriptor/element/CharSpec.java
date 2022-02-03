@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -20,17 +21,39 @@
 
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor.element;
 
+import java.nio.charset.StandardCharsets;
+
+import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
+import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
 /**
  * The charspec block (ECMA-167 1/7.2.1)
  *
  * Not implemented and not in use
  */
-public class CharSpec
-{
-	public byte[] bytes;
+public class CharSpec {
+	public int characterSetType;
+	public byte characterSetInfo[];
 
-	public CharSpec(byte[] bytes) {
-		this.bytes = bytes;
+	public static final int LENGTH = 64;
+
+	public CharSpec(byte[] bytes) throws InvalidDescriptor {
+		this.deserialize(bytes);
 	}
+
+	private void deserialize(byte[] bytes) throws InvalidDescriptor {
+		if (bytes.length < LENGTH) {
+			throw new InvalidDescriptor("CharSpec allocation descriptor too short");
+		}
+
+		this.characterSetType = UDFUtil.getUInt8(bytes, 0);
+		this.characterSetInfo = UDFUtil.getBytes(bytes, 1, 63);
+	}
+
+	@Override
+	public String toString() {
+		return "CharSpec [characterSetType=" + characterSetType + ", characterSetInfo="
+				+ new String(characterSetInfo, StandardCharsets.UTF_8).trim() + "]";
+	}
+
 }

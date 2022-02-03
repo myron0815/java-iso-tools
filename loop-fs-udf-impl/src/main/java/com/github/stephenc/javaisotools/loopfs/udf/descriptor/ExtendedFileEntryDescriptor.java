@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -22,10 +23,12 @@ package com.github.stephenc.javaisotools.loopfs.udf.descriptor;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
 
 import com.github.stephenc.javaisotools.loopfs.udf.Constants;
 import com.github.stephenc.javaisotools.loopfs.udf.UDFFileSystem;
 import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.ExtendedAttribute;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.ExtentAD;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.ICBTag;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.LongAD;
@@ -37,247 +40,156 @@ import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
  * The File Entry Descriptor (ECMA-167 4/14.9)
  */
 public class ExtendedFileEntryDescriptor extends FileEntryDescriptor {
-  public BigInteger objectSize;
-  public Timestamp  creatiDT;
-  public LongAD     streamDirICB;
+	public BigInteger objectSize;
+	public Timestamp creatiDT;
+	public LongAD streamDirICB;
 
-  // length, beginning position, ending position of these fields above
-  public final int  LEN_ICB_TAG        = 20;
-  public final int  LEN_UID            = 4;
-  public final int  LEN_GID            = 4;
-  public final int  LEN_PERM           = 4;
-  public final int  LEN_F_LINK_CNT     = 2;
-  public final int  LEN_RCD_FMT        = 1;
-  public final int  LEN_RCD_DISP_ATTRS = 1;
-  public final int  LEN_RCD_LEN        = 4;
-  public final int  LEN_INFO_LEN       = 8;
-  public final int  LEN_LB_RECORDED    = 8;
-  public final int  LEN_ACCESS_DT      = 12;
-  public final int  LEN_MODIFI_DT      = 12;
-  public final int  LEN_CREATI_DT      = 12;
-  public final int  LEN_ATTR_DT        = 12;
-  public final int  LEN_CHECKPOINT     = 4;
-  public final int  LEN_EXT_ATTR_ICB   = 16;
-  public final int  LEN_STREAM_DIR_ICB = 16;
-  public final int  LEN_IMPL_ID        = 32;
-  public final int  LEN_UNIQUE_ID      = 8;
-  public final int  LEN_EXT_ATTR_LEN   = 4;
-  public final int  LEN_ALLOC_DESC_LEN = 4;
+	// minimum length of a file entry descriptor (field "Reserved" included)
+	public final int MINIMUM_LENGTH = 512;
 
-  public final int  BP_ICB_TAG         = 16;
-  public final int  BP_UID             = 36;
-  public final int  BP_GID             = 40;
-  public final int  BP_PERM            = 44;
-  public final int  BP_F_LINK_CNT      = 48;
-  public final int  BP_RCD_FMT         = 50;
-  public final int  BP_RCD_DISP_ATTRS  = 51;
-  public final int  BP_RCD_LEN         = 52;
-  public final int  BP_INFO_LEN        = 56;
-  public final int  BP_OBJECT_SIZE     = 64;
-  public final int  BP_LB_RECORDED     = 72;
-  public final int  BP_ACCESS_DT       = 80;
-  public final int  BP_MODIFI_DT       = 92;
-  public final int  BP_CREATI_DT       = 104;
-  public final int  BP_ATTR_DT         = 116;
-  public final int  BP_CHECKPOINT      = 128;
-  public final int  BP_EXT_ATTR_ICB    = 136;
-  public final int  BP_STREA_DIR_ICB   = 136;
-  public final int  BP_IMPL_ID         = 168;
-  public final int  BP_UNIQUE_ID       = 200;
-  public final int  BP_EXT_ATTR_LEN    = 208;
-  public final int  BP_ALLOC_DESC_LEN  = 212;
-  public final int  BP_EXT_ATTRS       = 216;
+	public ExtendedFileEntryDescriptor() {
+		super();
+	}
 
-  public final int  EP_ICB_TAG         = BP_ICB_TAG + LEN_ICB_TAG;
-  public final int  EP_UID             = BP_UID + LEN_UID;
-  public final int  EP_GID             = BP_GID + LEN_GID;
-  public final int  EP_PERM            = BP_PERM + LEN_PERM;
-  public final int  EP_F_LINK_CNT      = BP_F_LINK_CNT + LEN_F_LINK_CNT;
-  public final int  EP_RCD_FMT         = BP_RCD_FMT + LEN_RCD_FMT;
-  public final int  EP_RCD_DISP_ATTRS  = BP_RCD_DISP_ATTRS + LEN_RCD_DISP_ATTRS;
-  public final int  EP_RCD_LEN         = BP_RCD_LEN + LEN_RCD_LEN;
-  public final int  EP_INFO_LEN        = BP_INFO_LEN + LEN_INFO_LEN;
-  public final int  EP_LB_RECORDED     = BP_LB_RECORDED + LEN_LB_RECORDED;
-  public final int  EP_ACCESS_DT       = BP_ACCESS_DT + LEN_ACCESS_DT;
-  public final int  EP_MODIFI_DT       = BP_MODIFI_DT + LEN_MODIFI_DT;
-  public final int  EP_ATTR_DT         = BP_ATTR_DT + LEN_ATTR_DT;
-  public final int  EP_CHECKPOINT      = BP_CHECKPOINT + LEN_CHECKPOINT;
-  public final int  EP_EXT_ATTR_ICB    = BP_EXT_ATTR_ICB + LEN_EXT_ATTR_ICB;
-  public final int  EP_IMPL_ID         = BP_IMPL_ID + LEN_IMPL_ID;
-  public final int  EP_UNIQUE_ID       = BP_UNIQUE_ID + LEN_UNIQUE_ID;
-  public final int  EP_EXT_ATTR_LEN    = BP_EXT_ATTR_LEN + LEN_EXT_ATTR_LEN;
-  public final int  EP_ALLOC_DESC_LEN  = BP_ALLOC_DESC_LEN + LEN_ALLOC_DESC_LEN;
+	public ExtendedFileEntryDescriptor(byte[] bytes) throws InvalidDescriptor {
+		this.deserialize(bytes);
+		this.verifyTagIdentifier();
+	}
 
-  // minimum length of a file entry descriptor (field "Reserved" included)
-  public final int  MINIMUM_LENGTH     = 512;
+	@Override
+	public int getExpectedTagIdentifier() {
+		return Constants.D_TYPE_EXTENDED_FILE_ENTRY;
+	}
 
-  public ExtendedFileEntryDescriptor() {
-    super();
-  }
+	@Override
+	public void deserialize(byte[] bytes) throws InvalidDescriptor {
+		if (bytes.length < MINIMUM_LENGTH) {
+			throw new InvalidDescriptor("File entry descriptor too short");
+		}
+		this.deserializeTag(bytes);
 
-  public ExtendedFileEntryDescriptor(byte[] bytes) throws InvalidDescriptor {
-    this.deserialize(bytes);
-    this.verifyTagIdentifier();
-  }
+		this.icbTag = new ICBTag(getBytes(bytes, ICBTag.LENGTH));
+		this.uid = getUInt32(bytes);
+		this.gid = getUInt32(bytes);
+		this.permissions = getUInt32(bytes);
+		this.fileLinks = getUInt16(bytes);
+		this.recordFormat = getUInt8(bytes);
+		this.recordDisplayAttrs = getUInt8(bytes);
+		this.recordLength = getUInt32(bytes);
+		this.infoLength = getUInt64(bytes);
+		this.objectSize = getUInt64(bytes);
+		this.lbRecorded = getUInt64(bytes);
+		this.accessDT = new Timestamp(getBytes(bytes, Timestamp.LENGTH));
+		this.modifiDT = new Timestamp(getBytes(bytes, Timestamp.LENGTH));
+		this.creatiDT = new Timestamp(getBytes(bytes, Timestamp.LENGTH));
+		this.attributeDT = new Timestamp(getBytes(bytes, Timestamp.LENGTH));
+		this.checkpoint = getUInt32(bytes);
+		getUInt32(bytes); // reserved
+		this.extAttrICB = new LongAD(getBytes(bytes, LongAD.LENGTH));
+		this.streamDirICB = new LongAD(getBytes(bytes, LongAD.LENGTH));
+		this.implIdentifier = new RegId(getBytes(bytes, RegId.LENGTH));
+		this.uniqueId = getUInt64(bytes);
+		this.extAttrLength = getUInt32(bytes);
+		this.allocDescriptorLength = getUInt32(bytes);
 
-  @Override
-  public int getExpectedTagIdentifier() {
-    return Constants.D_TYPE_EXTENDED_FILE_ENTRY;
-  }
+		// According to OSTA-UDF 2.3.6 NOTE 1, the file entry descriptor
+		// shall not exceed the size of one logical block.
+		// So, this.extAttrLength must less than (2048 - BP_EXT_ATTRS) and it's
+		// safe to convert it into an Integer, otherwise, it's invalid.
+		Integer maxExtAttrLen = Constants.DEFAULT_BLOCK_SIZE - currentPos;
+		if (this.extAttrLength > maxExtAttrLen) {
+			throw new InvalidDescriptor("Extended attributes too long");
+		}
+		// TODO: ignore them for now
+		// extendedAttributes = new ExtendedAttributeDescriptor(getBytes(bytes, extAttrLength.intValue()));
+		extendedAttributes = getBytes(bytes, extAttrLength.intValue());
 
-  @Override
-  public void deserialize(byte[] bytes) throws InvalidDescriptor {
-    if (bytes.length < MINIMUM_LENGTH) {
-      throw new InvalidDescriptor("File entry descriptor too short");
-    }
+		// Same as extended attributes (OSTA-UDF 2.3.6 NOTE 1)
+		Integer maxAllocLen = Constants.DEFAULT_BLOCK_SIZE - currentPos;
+		if (this.allocDescriptorLength > maxAllocLen) {
+			throw new InvalidDescriptor("Allocation descriptors too long");
+		}
+		// According to ECMA-167 4/14.9.22, there is a sequence of ADs
+		int len = 0;
+		this.allocDescriptors = new ArrayList<ExtentAD>();
+		while (len < this.allocDescriptorLength) {
+			ExtentAD extend = new ExtentAD(getBytes(bytes, ExtentAD.LENGTH));
+			len = len + ExtentAD.LENGTH;
+			if (extend.length > 0) {
+				this.allocDescriptors.add(extend);
+			}
+		}
+	}
 
-    byte[] fragment;
+	/**
+	 * Load FileIdentifierDescriptors (File Identifiers) in current ICB
+	 *
+	 * @param fs the UDFFileSystem object to read
+	 */
+	public void loadChildren(UDFFileSystem fs) throws IOException {
+		FileIdentifierDescriptor fid;
+		int bs = Constants.DEFAULT_BLOCK_SIZE;
 
-    this.deserializeTag(bytes);
+		for (ExtentAD ead : this.allocDescriptors) {
+			// uint32 meets no long type support again ¯\_(ツ)_/¯
+			int bufferLength = ead.length.intValue();
+			if (bufferLength == 0) {
+				continue;
+			}
 
-    fragment = UDFUtil.getBytes(bytes, BP_ICB_TAG, LEN_ICB_TAG);
-    this.icbTag = new ICBTag(fragment);
+			byte[] buffer = new byte[bufferLength];
 
-    this.uid = UDFUtil.getUInt32(bytes, BP_UID);
-    this.gid = UDFUtil.getUInt32(bytes, BP_GID);
-    this.permissions = UDFUtil.getUInt32(bytes, BP_PERM);
-    this.fileLinks = UDFUtil.getUInt16(bytes, BP_F_LINK_CNT);
-    this.recordFormat = UDFUtil.getUInt8(bytes, BP_RCD_FMT);
-    this.recordDisplayAttrs = UDFUtil.getUInt8(bytes, BP_RCD_DISP_ATTRS);
-    this.recordLength = UDFUtil.getUInt32(bytes, BP_RCD_LEN);
-    this.infoLength = UDFUtil.getUInt64(bytes, BP_INFO_LEN);
-    this.objectSize = UDFUtil.getUInt64(bytes, BP_OBJECT_SIZE);
-    this.lbRecorded = UDFUtil.getUInt64(bytes, BP_LB_RECORDED);
+			long absStartPos = fs.getFSDloc() + ead.location;
+			int bytesRead = fs.readBytes(absStartPos * bs, buffer, 0, // bufferOffset
+					bufferLength);
 
-    fragment = UDFUtil.getBytes(bytes, BP_ACCESS_DT, LEN_ACCESS_DT);
-    this.accessDT = new Timestamp(fragment);
+			if (bytesRead != ead.length) {
+				throw new IOException("Failed to read " + ead.length + " bytes at the beginning of sector "
+						+ absStartPos + ". Actually read " + bytesRead + " bytes.");
+			}
 
-    fragment = UDFUtil.getBytes(bytes, BP_MODIFI_DT, LEN_MODIFI_DT);
-    this.modifiDT = new Timestamp(fragment);
+			int offset = 0;
+			byte[] nextFragment = buffer;
 
-    fragment = UDFUtil.getBytes(bytes, BP_CREATI_DT, LEN_CREATI_DT);
-    this.creatiDT = new Timestamp(fragment);
+			// The first FileIdentifierDescriptor belongs to the directory and
+			// we should skip the first FileIdentifierDescriptor.
+			// (OSTA-UDF 2.3.4 NOTE-1)
+			boolean first = true;
+			boolean noMoreData = false;
 
-    fragment = UDFUtil.getBytes(bytes, BP_ATTR_DT, LEN_ATTR_DT);
-    this.attributeDT = new Timestamp(fragment);
+			while (true) {
+				try {
+					fid = new FileIdentifierDescriptor(nextFragment);
+				} catch (InvalidDescriptor ex) {
+					throw new IOException(ex.getMessage());
+				}
 
-    checkpoint = UDFUtil.getUInt32(bytes, BP_CHECKPOINT);
+				offset += fid.getConsumption();
 
-    fragment = UDFUtil.getBytes(bytes, BP_EXT_ATTR_ICB, LEN_EXT_ATTR_ICB);
-    this.extAttrICB = new LongAD(fragment);
+				// Consumption of fid has included the padding, so it could
+				// exceed the bufferLength.
+				if (offset >= bufferLength) {
+					noMoreData = true;
+				} else {
+					nextFragment = UDFUtil.getRemainingBytes(buffer, offset);
+				}
 
-    fragment = UDFUtil.getBytes(bytes, BP_STREA_DIR_ICB, LEN_STREAM_DIR_ICB);
-    this.streamDirICB = new LongAD(fragment);
+				if (first) {
+					first = false;
+					continue;
+				} else {
+					this.fids.add(fid);
+				}
 
-    fragment = UDFUtil.getBytes(bytes, BP_IMPL_ID, LEN_IMPL_ID);
-    this.implIdentifier = new RegId(fragment);
-
-    this.uniqueId = UDFUtil.getUInt64(bytes, BP_UNIQUE_ID);
-    this.extAttrLength = UDFUtil.getUInt32(bytes, BP_EXT_ATTR_LEN);
-    this.allocDescriptorLength = UDFUtil.getUInt32(bytes, BP_ALLOC_DESC_LEN);
-
-    // According to OSTA-UDF 2.3.6 NOTE 1, the file entry descriptor
-    // shall not exceed the size of one logical block.
-    // So, this.extAttrLength must less than (2048 - BP_EXT_ATTRS) and it's
-    // safe to convert it into an Integer, otherwise, it's invalid.
-    Integer maxExtAttrLen = Constants.DEFAULT_BLOCK_SIZE - BP_EXT_ATTRS;
-    if (this.extAttrLength > maxExtAttrLen) {
-      throw new InvalidDescriptor("Extended attributes too long");
-    }
-
-    Integer intExtAttrLength = this.extAttrLength.intValue();
-    this.extAttrs = UDFUtil.getBytes(bytes, BP_EXT_ATTRS, intExtAttrLength);
-
-    // Same as extended attributes (OSTA-UDF 2.3.6 NOTE 1)
-    Integer bpAllocDescriptors = BP_EXT_ATTRS + intExtAttrLength;
-    Integer maxAllocLen = Constants.DEFAULT_BLOCK_SIZE - bpAllocDescriptors;
-    if (this.allocDescriptorLength > maxAllocLen) {
-      throw new InvalidDescriptor("Allocation descriptors too long");
-    }
-
-    Integer intAllocDescLen = this.allocDescriptorLength.intValue();
-    byte[] bytesAllocDescriptors = UDFUtil.getBytes(bytes, bpAllocDescriptors, intAllocDescLen);
-
-    // According to ECMA-167 4/14.9.22, there is a sequence of ADs
-    int allocOffset = 0;
-    while (allocOffset + 8 <= intAllocDescLen) {
-      fragment = UDFUtil.getBytes(bytesAllocDescriptors, allocOffset, 8);
-      this.allocDescriptors.add(new ExtentAD(fragment));
-      allocOffset += 8;
-    }
-  }
-
-  /**
-   * Load FileIdentifierDescriptors (File Identifiers) in current ICB
-   *
-   * @param fs
-   *          the UDFFileSystem object to read
-   */
-  public void loadChildren(UDFFileSystem fs) throws IOException {
-    FileIdentifierDescriptor fid;
-    int bs = Constants.DEFAULT_BLOCK_SIZE;
-
-    for (ExtentAD ead : this.allocDescriptors) {
-      // uint32 meets no long type support again ¯\_(ツ)_/¯
-      int bufferLength = ead.length.intValue();
-      byte[] buffer = new byte[bufferLength];
-
-      long absStartPos = fs.getPDStartPos() + fs.getAnchor().mainVolumeExtent.location + ead.location;
-      int bytesRead = fs.readBytes(absStartPos * bs, buffer, 0, // bufferOffset
-          bufferLength);
-
-      if (bytesRead != ead.length) {
-        throw new IOException(
-            "Failed to read " + ead.length + " bytes at the beginning of sector " + absStartPos + ". Actually read " + bytesRead + " bytes.");
-      }
-
-      int offset = 0;
-      byte[] nextFragment = buffer;
-
-      // The first FileIdentifierDescriptor belongs to the directory and
-      // we should skip the fisrt FileIdentifierDescriptor.
-      // (OSTA-UDF 2.3.4 NOTE-1)
-      boolean first = true;
-
-      boolean noMoreData = false;
-
-      while (true) {
-        try {
-          fid = new FileIdentifierDescriptor(nextFragment);
-        }
-        catch (InvalidDescriptor ex) {
-          throw new IOException(ex.getMessage());
-        }
-
-        offset += fid.getConsumption();
-
-        // Consumption of fid has included the padding, so it could
-        // exceed the bufferLength.
-        if (offset >= bufferLength) {
-          noMoreData = true;
-        }
-        else {
-          nextFragment = UDFUtil.getRemainingBytes(buffer, offset);
-        }
-
-        if (first) {
-          first = false;
-          continue;
-        }
-        else {
-          this.fids.add(fid);
-        }
-
-        // If nextFragment is another file identifier descriptor,
-        // then it must starts with 0x0101 and contains 40 bytes at least
-        if (!noMoreData && nextFragment.length > 40 && UDFUtil.getUInt16(nextFragment, 0) == 0x0101) {
-          // this looks much better than using logical not
-          continue;
-        }
-        else {
-          break;
-        }
-      }
-    }
-  }
+				// If nextFragment is another file identifier descriptor,
+				// then it must starts with 0x0101 and contains 40 bytes at least
+				if (!noMoreData && nextFragment.length > 40 && UDFUtil.getUInt16(nextFragment, 0) == 0x0101) {
+					// this looks much better than using logical not
+					continue;
+				} else {
+					break;
+				}
+			}
+		}
+	}
 }

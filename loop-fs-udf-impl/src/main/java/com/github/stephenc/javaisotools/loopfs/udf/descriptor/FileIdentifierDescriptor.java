@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -21,48 +22,38 @@
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor;
 
 import com.github.stephenc.javaisotools.loopfs.udf.Constants;
-import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.UDFDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.LongAD;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.DString;
-
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.LongAD;
+import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.RegId;
+import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
 /**
  * The File Identifier Descriptor (ECMA-167 4/14.4)
  */
-public class FileIdentifierDescriptor extends UDFDescriptor
-{
+public class FileIdentifierDescriptor extends UDFDescriptor {
+
+//	struct FileIdentifierDescriptor { /* ECMA 167 4/14.4 */
+//		struct tag DescriptorTag;
+//		Uint16 FileVersionNumber;
+//		Uint8 FileCharacteristics;
+//		Uint8 LengthofFileIdentifier;
+//		struct long_ad ICB;
+//		Uint16 LengthOfImplementationUse;
+//		byte ImplementationUse[];
+//		char FileIdentifier[];
+//		byte Padding[];
+//	}
+
 	public Integer version;
 	public Integer characteristics;
 	public Integer fileIdLength;
 	public LongAD icb;
 	public Integer implUseLength;
-	public byte[] implUse;
+	public RegId implUse;
 	public DString fileId;
 
 	// number of bytes that this file identifier descriptor consumes
 	protected Integer consumption;
-
-	// length, beginning position, ending position of these fields above
-	public final int LEN_VERSION = 2;
-	public final int LEN_CHARACTERISTICS = 1;
-	public final int LEN_LEN_FID = 1;
-	public final int LEN_ICB = 16;
-	public final int LEN_LEN_IMPL_USE = 2;
-
-	public final int BP_VERSION = 16;
-	public final int BP_CHARACTERISTICS = 18;
-	public final int BP_LEN_FID = 19;
-	public final int BP_ICB = 20;
-	public final int BP_LEN_IMPL_USE = 36;
-	public final int BP_IMPL_USE = 38;
-
-	public final int EP_VERSION = BP_VERSION + LEN_VERSION;
-	public final int EP_CHARACTERISTICS = BP_CHARACTERISTICS + LEN_CHARACTERISTICS;
-	public final int EP_LEN_FID = BP_LEN_FID + LEN_LEN_FID;
-	public final int EP_ICB = BP_ICB + LEN_ICB;
-	public final int EP_LEN_IMPL_USE = BP_LEN_IMPL_USE + LEN_LEN_IMPL_USE;
 
 	// minimum length of a file identifier descriptor (field "Reserved" included)
 	public final int MINIMUM_LENGTH = 40;
@@ -85,30 +76,25 @@ public class FileIdentifierDescriptor extends UDFDescriptor
 		if (bytes.length < MINIMUM_LENGTH) {
 			throw new InvalidDescriptor("File identifier descriptor too short");
 		}
-
-		byte[] fragment;
-
 		this.deserializeTag(bytes);
 
-		this.version = UDFUtil.getUInt16(bytes, BP_VERSION);
-		this.characteristics = UDFUtil.getUInt8(bytes, BP_CHARACTERISTICS);
-		this.fileIdLength = UDFUtil.getUInt8(bytes, BP_LEN_FID);
+		this.version = getUInt16(bytes);
+		this.characteristics = getUInt8(bytes);
+		this.fileIdLength = getUInt8(bytes);
+		this.icb = new LongAD(getBytes(bytes, LongAD.LENGTH));
+		this.implUseLength = getUInt16(bytes);
+		if (this.implUseLength > 0) {
+			this.implUse = new RegId(getBytes(bytes, this.implUseLength));
+		}
+		this.fileId = new DString(getBytes(bytes, this.fileIdLength));
 
-		fragment = UDFUtil.getBytes(bytes, BP_ICB, LEN_ICB);
-		this.icb = new LongAD(fragment);
-
-		this.implUseLength = UDFUtil.getUInt16(bytes, BP_LEN_IMPL_USE);
-		this.implUse = UDFUtil.getBytes(bytes, BP_IMPL_USE, this.implUseLength);
-
-		Integer bpFileIdentifier = BP_IMPL_USE + this.implUseLength;
-		fragment = UDFUtil.getBytes(bytes, bpFileIdentifier, this.fileIdLength);
-		this.fileId = new DString(fragment);
-
-		Integer bytesConsumed = bpFileIdentifier + this.fileIdLength;
-
-		Integer divisor = Constants.FID_PADDING_DIVISOR;
-		Integer paddingLength = divisor - (bytesConsumed % divisor);
-		this.consumption = bytesConsumed + paddingLength;
+		// Padding
+		// alt: (4 * ((currentPos + 3) / 4)) - currentPos;
+		if ((currentPos % Constants.FID_PADDING_DIVISOR) > 0) {
+			int paddingLength = Constants.FID_PADDING_DIVISOR - (currentPos % Constants.FID_PADDING_DIVISOR);
+			currentPos += paddingLength;
+		}
+		this.consumption = currentPos;
 	}
 
 	/**

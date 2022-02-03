@@ -21,24 +21,29 @@
 
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor.element;
 
-import java.nio.charset.StandardCharsets;
+import java.math.BigInteger;
 
 import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
 /**
- * The regid block (ECMA-167 1/7.4)
+ * LogicalVolumeHeaderDesc { ECMA 167 4/14.15
  *
  * Not implemented and not in use
  */
-public class RegId {
-	public int Flags; // Uint8
-	public byte Identifier[]; // char[23]
-	public byte IdentifierSuffix[]; // char[8]
+public class LogicalVolumeHeader {
+
+//	struct LogicalVolumeHeaderDesc { /* ECMA 167 4/14.15 */
+//		Uint64 UniqueID,
+//		bytes Reserved[24]
+//	}
+
+	public BigInteger uniqueId;
+	public byte reserved[];
 
 	public static final int LENGTH = 32;
 
-	public RegId(byte[] bytes) throws InvalidDescriptor {
+	public LogicalVolumeHeader(byte[] bytes) throws InvalidDescriptor {
 		this.deserialize(bytes);
 	}
 
@@ -47,18 +52,12 @@ public class RegId {
 			throw new InvalidDescriptor("RegId allocation descriptor too short");
 		}
 
-		this.Flags = UDFUtil.getUInt8(bytes, 0);
-		Identifier = UDFUtil.getBytes(bytes, 1, 23);
-		IdentifierSuffix = UDFUtil.getBytes(bytes, 24, 31);
-	}
-	
-	public String getId() {
-		return new String(Identifier);
+		uniqueId = UDFUtil.getUInt64(bytes, 0);
+		reserved = UDFUtil.getBytes(bytes, 8, 24);
 	}
 
 	@Override
 	public String toString() {
-		return "RegId [Flags=" + Flags + ", Identifier=" + new String(Identifier, StandardCharsets.UTF_8).trim() + ", IdentifierSuffix=" + new String(IdentifierSuffix, StandardCharsets.UTF_8).trim() + "]";
+		return "LogicalVolumeHeader [uniqueId=" + uniqueId + ", reserved=" + reserved + "]";
 	}
-
 }

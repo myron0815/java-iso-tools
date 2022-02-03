@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -20,42 +21,35 @@
 
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor.element;
 
-import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidLongAD;
-import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidLBAddr;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.LBAddr;
+import java.nio.charset.StandardCharsets;
 
+import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
+import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidLBAddr;
+import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidLongAD;
 
 /**
  * The Long Allocation Descriptor (ECMA-167 4/14.14.2.1)
  */
-public class LongAD
-{
-	// attributes in a long allocation descriptor (ECMA-167 figure 4/43)
+public class LongAD {
+
+//	struct long_ad { /* ECMA 167 4/14.14.2 */
+//		Uint32 ExtentLength;
+//		Lb_addr ExtentLocation;
+//		byte ImplementationUse[6];
+//	}
+
 	public Long length;
 	public LBAddr location;
 	public byte[] implUse;
 
-	// length, beginning position, ending position of these fields above
-	public final int LEN_LENGTH = 4;
-	public final int LEN_LOCATION = 6;
-	public final int LEN_IMPL_USE = 6;
-
-	public final int BP_LENGTH = 0;
-	public final int BP_LOCATION = 4;
-	public final int BP_IMPL_USE = 10;
-
-	public final int EP_LOCATION = BP_LOCATION + LEN_LENGTH;
-	public final int EP_IMPL_USE = BP_IMPL_USE + LEN_IMPL_USE;
-
 	// the minimum length of a long allocation descriptor (bytes)
-	public final int MINIMUM_LENGTH = 16;
+	public static final int LENGTH = 16;
 
 	/**
 	 * Constructor
 	 *
-	 * @param bytes byte array contains a raw long
-	 *              allocation descriptor at the beginning
+	 * @param bytes byte array contains a raw long allocation descriptor at the
+	 *              beginning
 	 * @throws InvalidLongAD
 	 */
 	public LongAD(byte[] bytes) throws InvalidLongAD {
@@ -65,25 +59,29 @@ public class LongAD
 	/**
 	 * deserialize bytes of a raw long allocation descriptor
 	 *
-	 * @param bytes byte array contains a raw long
-	 *              allocation descriptor at the beginning
+	 * @param bytes byte array contains a raw long allocation descriptor at the
+	 *              beginning
 	 * @throws InvalidLongAD
 	 */
 	public void deserialize(byte[] bytes) throws InvalidLongAD {
-		if (bytes.length < MINIMUM_LENGTH) {
+		if (bytes.length < LENGTH) {
 			throw new InvalidLongAD("long allocation descriptor too short");
 		}
 
-		this.length = UDFUtil.getUInt32(bytes, BP_LENGTH);
-
-		byte[] lbAddrBytes = UDFUtil.getBytes(bytes, BP_LOCATION, LEN_LOCATION);
-
+		this.length = UDFUtil.getUInt32(bytes, 0);
+		byte[] lbAddrBytes = UDFUtil.getBytes(bytes, 4, LBAddr.LENGTH);
 		try {
 			this.location = new LBAddr(lbAddrBytes);
 		} catch (InvalidLBAddr ex) {
 			throw new InvalidLongAD(ex.getMessage());
 		}
 
-		this.implUse = UDFUtil.getBytes(bytes, BP_IMPL_USE, LEN_IMPL_USE);
+		this.implUse = UDFUtil.getBytes(bytes, 10, 6);
+	}
+
+	@Override
+	public String toString() {
+		return "LongAD [length=" + length + ", location=" + location + ", implUse="
+				+ new String(implUse, StandardCharsets.UTF_8).trim() + "]";
 	}
 }

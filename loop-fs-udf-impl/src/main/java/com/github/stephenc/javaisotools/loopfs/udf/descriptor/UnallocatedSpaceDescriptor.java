@@ -21,57 +21,63 @@
 
 package com.github.stephenc.javaisotools.loopfs.udf.descriptor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.github.stephenc.javaisotools.loopfs.udf.Constants;
 import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.ExtentAD;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
 
 /**
- * The Anchor Volume Pointer Descriptor (ECMA-167 3/10.2)
+ * The Unallocated SpaceDescriptor (ECMA-167 3/10.8)
  */
-public class AnchorDescriptor extends UDFDescriptor {
+public class UnallocatedSpaceDescriptor extends UDFDescriptor {
 
-//	struct AnchorVolumeDescriptorPointer { /* ECMA 167 3/10.2 */
+//	struct UnallocatedSpaceDesc { /* ECMA 167 3/10.8 */
 //		struct tag DescriptorTag;
-//		struct extent_ad MainVolumeDescriptorSequenceExtent;
-//		struct extent_ad ReserveVolumeDescriptorSequenceExtent;
-//		byte Reserved[480];
+//		Uint32 VolumeDescriptorSequenceNumber;
+//		Uint32 NumberofAllocationDescriptors;
+//		extent_ad AllocationDescriptors[];
 //	}
 
-	public ExtentAD mainVolumeExtent;
-	public ExtentAD reserveVolumeExtent;
+	public Long volumeDescriptorSequenceNumber;
+	public Long numberofAllocationDescriptors;
+	public List<ExtentAD> allocationDescriptors;
 
-	// minimum length of an anchor descriptor (field "Reserved" included)
-	public static final int LENGTH = 512;
+	// minimum length of an unallocated space descriptor (field "Reserved" included)
+	public final int MINIMUM_LENGTH = 512;
 
-	public AnchorDescriptor() {
+	public UnallocatedSpaceDescriptor() {
 		super();
 	}
 
-	public AnchorDescriptor(byte[] bytes) throws InvalidDescriptor {
+	public UnallocatedSpaceDescriptor(byte[] bytes) throws InvalidDescriptor {
 		super(bytes);
 	}
 
 	@Override
 	public int getExpectedTagIdentifier() {
-		return Constants.D_TYPE_ANCHOR_POINTER;
+		return Constants.D_TYPE_UNALLOCATED_SPACE;
 	}
 
 	@Override
 	public void deserialize(byte[] bytes) throws InvalidDescriptor {
-		if (bytes.length < LENGTH) {
-			throw new InvalidDescriptor("Anchor descriptor too short");
+		if (bytes.length < MINIMUM_LENGTH) {
+			throw new InvalidDescriptor("unallocated space descriptor too short");
 		}
 		this.deserializeTag(bytes);
 
-		this.mainVolumeExtent = new ExtentAD(getBytes(bytes, ExtentAD.LENGTH));
-		this.reserveVolumeExtent = new ExtentAD(getBytes(bytes, ExtentAD.LENGTH));
+		this.volumeDescriptorSequenceNumber = getUInt32(bytes);
+		this.numberofAllocationDescriptors = getUInt32(bytes);
 
-		currentPos = LENGTH; // set to end
-	}
-
-	@Override
-	public String toString() {
-		return "AnchorDescriptor [mainVolumeExtent=" + mainVolumeExtent + ", reserveVolumeExtent=" + reserveVolumeExtent
-				+ "]";
+		this.allocationDescriptors = new ArrayList<ExtentAD>();
+		int allocCnt = this.numberofAllocationDescriptors.intValue();
+		while (allocCnt > 0) {
+			ExtentAD extend = new ExtentAD(getBytes(bytes, ExtentAD.LENGTH));
+			if (extend.length > 0) {
+				this.allocationDescriptors.add(extend);
+			}
+			allocCnt--;
+		}
 	}
 }

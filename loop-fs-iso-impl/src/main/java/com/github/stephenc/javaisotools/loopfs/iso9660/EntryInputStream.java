@@ -107,7 +107,13 @@ class EntryInputStream extends InputStream {
     }
 
     public int available() {
-        return (int) Math.max(this.rem, 0);
+        if (this.rem > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        } else if (this.rem < 0) {
+            return 0;
+        } else {
+            return (int) this.rem;
+        }
     }
 
     public long size() {

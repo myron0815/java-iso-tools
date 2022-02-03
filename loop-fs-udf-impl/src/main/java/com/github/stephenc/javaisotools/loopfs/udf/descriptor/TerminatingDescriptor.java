@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022. Myron Boyle (https://github.com/myron0815/)
  * Copyright (c) 2019. Mr.Indescribable (https://github.com/Mr-indescribable).
  * Copyright (c) 2010. Stephen Connolly.
  * Copyright (c) 2006-2007. loopy project (http://loopy.sourceforge.net).
@@ -22,22 +23,14 @@ package com.github.stephenc.javaisotools.loopfs.udf.descriptor;
 
 import com.github.stephenc.javaisotools.loopfs.udf.Constants;
 import com.github.stephenc.javaisotools.loopfs.udf.exceptions.InvalidDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.UDFUtil;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.UDFDescriptor;
-import com.github.stephenc.javaisotools.loopfs.udf.descriptor.element.ExtentAD;
-
 
 /**
  * The Terminating Descriptor (ECMA-167 3/10.9)
  */
-public class TerminatingDescriptor extends UDFDescriptor
-{
-	// length, beginning position, ending position of these fields above
-	public final int LEN_RESERVED = 496;
-	public final int BP_RESERVED = 16;
+public class TerminatingDescriptor extends UDFDescriptor {
 
 	// minimum length of a terminating descriptor (field "Reserved" included)
-	public final int MINIMUM_LENGTH = 512;
+	public static final int LENGTH = 512;
 
 	public TerminatingDescriptor() {
 		super();
@@ -54,10 +47,9 @@ public class TerminatingDescriptor extends UDFDescriptor
 
 	@Override
 	public void deserialize(byte[] bytes) throws InvalidDescriptor {
-		if (bytes.length < MINIMUM_LENGTH) {
+		if (bytes.length < LENGTH) {
 			throw new InvalidDescriptor("Terminating descriptor too short");
 		}
-
 		this.deserializeTag(bytes);
 	}
 }
